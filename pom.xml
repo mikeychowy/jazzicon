@@ -4,19 +4,27 @@
 
   <groupId>io.github.mikeychowy.jazzicon</groupId>
   <artifactId>jazzicon</artifactId>
-  <version>1.0-SNAPSHOT</version>
+  <version>1.0.0</version>
 
   <properties>
     <apache.commons.lang3.version>3.18.0</apache.commons.lang3.version>
     <apache.commons.text.version>1.14.0</apache.commons.text.version>
-    <colormath.version>3.6.1</colormath.version>
 
+    <colormath.version>3.6.1</colormath.version>
     <hipparchus.version>4.0.2</hipparchus.version>
+
     <java.version>21</java.version>
+    <maven.compiler.proc>full</maven.compiler.proc>
     <maven.compiler.source>${java.version}</maven.compiler.source>
     <maven.compiler.target>${java.version}</maven.compiler.target>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
     <spotless.version>2.46.1</spotless.version>
+
+    <test.assertj.version>3.27.6</test.assertj.version>
+    <test.junit.version>5.13.4</test.junit.version>
+    <test.mockito.version>5.20.0</test.mockito.version>
+    <test.rainbowgum.version>0.8.2</test.rainbowgum.version>
   </properties>
 
   <dependencies>
@@ -50,6 +58,68 @@
       <artifactId>slf4j-api</artifactId>
       <version>2.0.17</version>
     </dependency>
+    <dependency>
+      <groupId>io.avaje</groupId>
+      <artifactId>avaje-spi-service</artifactId>
+      <version>2.9</version>
+      <scope>test</scope>
+    </dependency>
+
+    <!--  Test Dependencies    -->
+    <dependency>
+      <groupId>io.jstach.rainbowgum</groupId>
+      <artifactId>rainbowgum-core</artifactId>
+      <version>${test.rainbowgum.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.jstach.rainbowgum</groupId>
+      <artifactId>rainbowgum-pattern</artifactId>
+      <version>${test.rainbowgum.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.jstach.rainbowgum</groupId>
+      <artifactId>rainbowgum-slf4j</artifactId>
+      <version>${test.rainbowgum.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <version>${test.assertj.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-api</artifactId>
+      <version>${test.junit.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-engine</artifactId>
+      <version>${test.junit.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-params</artifactId>
+      <version>${test.junit.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
+      <version>${test.mockito.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-junit-jupiter</artifactId>
+      <version>${test.mockito.version}</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
@@ -62,10 +132,72 @@
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
         <version>3.14.1</version>
+        <configuration>
+          <annotationProcessorPaths>
+            <path>
+              <groupId>io.avaje</groupId>
+              <artifactId>avaje-spi-service</artifactId>
+              <version>2.9</version>
+            </path>
+          </annotationProcessorPaths>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
+          <execution>
+            <goals>
+              <goal>properties</goal>
+            </goals>
+          </execution>
+        </executions>
       </plugin>
       <plugin>
         <artifactId>maven-surefire-plugin</artifactId>
         <version>3.5.4</version>
+        <configuration>
+          <argLine>@{argLine} -javaagent:${org.mockito:mockito-core:jar}</argLine>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.jacoco</groupId>
+        <artifactId>jacoco-maven-plugin</artifactId>
+        <version>0.8.13</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>prepare-agent</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>jacoco-check</id>
+            <goals>
+              <goal>check</goal>
+            </goals>
+            <configuration>
+              <rules>
+                <rule>
+                  <element>PACKAGE</element>
+                  <limits>
+                    <limit>
+                      <counter>LINE</counter>
+                      <value>COVEREDRATIO</value>
+                      <minimum>0.40</minimum>
+                    </limit>
+                  </limits>
+                </rule>
+              </rules>
+            </configuration>
+          </execution>
+          <execution>
+            <id>report</id>
+            <goals>
+              <goal>report</goal>
+            </goals>
+            <phase>prepare-package</phase>
+          </execution>
+        </executions>
       </plugin>
       <plugin>
         <groupId>com.diffplug.spotless</groupId>
@@ -95,12 +227,10 @@
           <java>
             <removeUnusedImports>
               <engine>cleanthat-javaparser-unnecessaryimport</engine>
-              <!-- optional. Defaults to `google-java-format`. Can be switched to `cleanthat-javaparser-unnecessaryimport` (e.g. to process JDK17 source files with a JDK8+ Runtime) -->
             </removeUnusedImports>
             <removeUnusedImports />
             <cleanthat>
               <version>2.24</version>
-              <!-- optional version of Cleanthat -->
               <mutators>
                 <mutator>SafeAndConsensual</mutator>
                 <!-- optional. Default to 'SafeAndConsensual' to include all mutators -->
@@ -187,5 +317,4 @@
       </plugin>
     </plugins>
   </build>
-
 </project>

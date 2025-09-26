@@ -10,7 +10,6 @@ import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
-import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
@@ -20,8 +19,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
-import org.apache.commons.lang3.RegExUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.hipparchus.random.RandomGenerator;
 import org.hipparchus.random.Well512a;
@@ -42,14 +39,14 @@ public class JazzIcon {
     static final String THREE_POINTS_DECIMAL_FORMAT = "%.3f";
     static final String ONE_POINT_DECIMAL_FORMAT = "%.1f";
     private static final Logger log = LoggerFactory.getLogger(JazzIcon.class);
-    private final ReentrantLock lock = new ReentrantLock(true);
-    private final List<String> svgClasses = new ArrayList<>();
-    private final List<String> svgStyles = new ArrayList<>();
-    private int shapeCount;
-    private int wobble;
-    private ColorPalettes baseColors;
-    private String allowedCharacters;
-    private RandomGenerator randomGenerator;
+    final ReentrantLock lock = new ReentrantLock(true);
+    final List<String> svgClasses = new ArrayList<>();
+    final List<String> svgStyles = new ArrayList<>();
+    int shapeCount;
+    int wobble;
+    ColorPalettes baseColors;
+    String allowedCharactersForPaddingText;
+    RandomGenerator randomGenerator;
 
     public JazzIcon() {
         this(
@@ -64,37 +61,40 @@ public class JazzIcon {
             int shapeCount,
             int wobble,
             ColorPalettes baseColors,
-            String allowedCharacters,
+            String allowedCharactersForPaddingText,
             RandomGenerator randomGenerator) {
         if (shapeCount <= 0) {
             throw new IllegalArgumentException("shapeCount must be > 0");
         }
         this.shapeCount = shapeCount;
+
         if (wobble <= 0) {
             throw new IllegalArgumentException("wobble must be > 0");
         }
         this.wobble = wobble;
+
         if (Objects.isNull(baseColors)) {
             throw new IllegalArgumentException("baseColors must not be null");
         }
         this.baseColors = baseColors;
-        if (StringUtils.isBlank(allowedCharacters)) {
-            throw new IllegalArgumentException("allowedCharacters is required");
+
+        if (StringUtils.isBlank(allowedCharactersForPaddingText)) {
+            throw new IllegalArgumentException("allowedCharacters must not be just blanks, an empty string or null");
         }
+        this.allowedCharactersForPaddingText = allowedCharactersForPaddingText;
 
         if (shapeCount + 1 > baseColors.getColors().size()) {
             throw new IllegalArgumentException(
-                    "Insufficient base colors, shape count list size must be higher than shape count + 1");
+                    "Insufficient base colors, shapeCount list size must be higher than shapeCount + 1");
         }
 
-        this.allowedCharacters = allowedCharacters;
         if (Objects.isNull(randomGenerator)) {
             throw new IllegalArgumentException("randomGenerator must not be null");
         }
         this.randomGenerator = randomGenerator;
     }
 
-    private static String rotateColor(@NonNull String hexColor, double hueShift) {
+    static String rotateColor(@NonNull String hexColor, double hueShift) {
         RGB rgb = RGB.Companion.invoke(hexColor);
         HSV hsv = rgb.toHSV();
         double newHue = ((hsv.getH() + hueShift) % 360.0);
@@ -110,7 +110,11 @@ public class JazzIcon {
         return "data:image/svg+xml;base64," + encoded;
     }
 
-    private void nextTransform(int index, Writer out) throws IOException {
+    public static JazzIconBuilder builder() {
+        return new JazzIconBuilder();
+    }
+
+    void nextTransform(int index, Writer out) throws IOException {
         double firstRotation = randomGenerator.nextDouble();
         double boost = randomGenerator.nextDouble();
         double secondRotation = randomGenerator.nextDouble();
@@ -127,12 +131,12 @@ public class JazzIcon {
                         String.format(Locale.US, ONE_POINT_DECIMAL_FORMAT, r)));
     }
 
-    private void nextColor(@NonNull List<String> rotatedColors, Writer out) throws IOException {
-        randomGenerator.nextInt();
+    void nextColor(@NonNull List<String> rotatedColors, Writer out) throws IOException {
+        randomGenerator.nextDouble();
         var position = randomGenerator.nextDouble();
         int index = (int) Math.floor((rotatedColors.size() - 1) * position);
         while (index >= rotatedColors.size() || index < 0) {
-            position = randomGenerator.nextInt();
+            position = randomGenerator.nextDouble();
             index = (int) Math.floor((rotatedColors.size() - 1) * position);
         }
 
@@ -206,41 +210,48 @@ public class JazzIcon {
                 svgStyles.stream().filter(StringUtils::isNotBlank).toList());
     }
 
-    private void createShapes(@NonNull List<String> rotatedColors, Writer out) throws IOException {
-        List<String> shapes = new ArrayList<>();
+    void createShapes(@NonNull List<String> rotatedColors, Writer out) throws IOException {
+        List<String> mutableRotatedColors = new ArrayList<>(rotatedColors);
 
         // first line
-        out.write("rect x=\"0\" y=\"0\" width=\"100%\" height=\"100%\" fill=\"");
-        nextColor(rotatedColors, out);
+        out.write("<rect x=\"0\" y=\"0\" width=\"100%\" height=\"100%\" fill=\"");
+        nextColor(mutableRotatedColors, out);
         out.write("\" />");
 
         for (int i = 0; i < shapeCount; i++) {
             out.write("<rect x=\"0\" y=\"0\" width=\"100%\" height=\"100%\" transform=\"");
             nextTransform(i, out);
             out.write("\" fill=\"");
-            nextColor(rotatedColors, out);
+            nextColor(mutableRotatedColors, out);
             out.write("\" />");
         }
     }
 
-    private String randomStringFromAllowedChars(int length) {
+    @SuppressWarnings("SameParameterValue")
+    String randomStringFromAllowedChars(int length) {
         StringBuilder sb = new StringBuilder(length);
-        int n = allowedCharacters.length();
+        int n = allowedCharactersForPaddingText.length();
         for (int i = 0; i < length; i++) {
             int idx = SECURE_RANDOM.nextInt(n);
-            sb.append(allowedCharacters.charAt(idx));
+            sb.append(allowedCharactersForPaddingText.charAt(idx));
         }
         return sb.toString();
     }
 
     public void generateIconToStream(@NonNull String text, @NonNull OutputStream outputStream) throws IOException {
+        generateIconToStream(text, outputStream, null);
+    }
+
+    public void generateIconToStream(
+            @NonNull String text, @NonNull OutputStream outputStream, @Nullable Consumer<Writer> writerConsumer)
+            throws IOException {
         try (OutputStreamWriter osw = new OutputStreamWriter(outputStream, StandardCharsets.UTF_8)) {
-            generateIconToWriter(text, osw, null);
+            generateIconToWriter(text, osw, writerConsumer);
             osw.flush();
         }
     }
 
-    private void generateIconToWriter(
+    public void generateIconToWriter(
             @NonNull String text, @NonNull Writer out, @Nullable Consumer<Writer> writerConsumer) {
         String safeText = StringUtils.trimToEmpty(text);
         if (safeText.length() <= 3) {
@@ -248,11 +259,6 @@ public class JazzIcon {
         }
 
         Set<String> baseActualColors = baseColors.getColors();
-
-        if (shapeCount + 1 > baseColors.getColors().size()) {
-            throw new IllegalArgumentException(
-                    "Insufficient base colors, shape count list size must be higher than shape count + 1");
-        }
 
         long seed;
         try {
@@ -270,9 +276,10 @@ public class JazzIcon {
             double position = randomGenerator.nextDouble();
             double hueShift = (30 * position) - (wobble / 2.0F);
 
+            // need MUTABLE list
             List<String> rotatedColors = baseActualColors.stream()
                     .map(base -> rotateColor(base, hueShift))
-                    .collect(Collectors.toList());
+                    .toList();
 
             // append head
             out.write("<svg ");
@@ -286,6 +293,7 @@ public class JazzIcon {
 
             createShapes(rotatedColors, out);
 
+            // in case needs to add other shapes or whatever before appending tail
             if (Objects.nonNull(writerConsumer)) {
                 writerConsumer.accept(out);
             }
@@ -301,86 +309,137 @@ public class JazzIcon {
     }
 
     public String generateIcon(@NonNull String text) {
-        try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
-            generateIconToStream(text, baos);
-            return baos.toString(StandardCharsets.UTF_8);
+        try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+            generateIconToStream(text, outputStream);
+            return outputStream.toString(StandardCharsets.UTF_8);
         } catch (IOException e) {
-            throw new JazzIconGenerationException("error while generating icon to writer", e);
+            throw new JazzIconGenerationException("error while generating icon", e);
         }
     }
 
     public String generateIconWithInitials(@NonNull String name) {
-        var jazzIcon = generateIcon(name);
-        var initials = NameUtils.getInitials(name);
-
-        return RegExUtils.replaceFirst(
-                jazzIcon,
-                "</svg>",
-                MessageFormat.format(
-                        "<text x=\"50%\" y=\"50%\" text-anchor=\"middle\" dominant-baseline=\"middle\" class=\"fill-white font-bold text-[30px] font-sans\">{0}</text></svg>",
-                        initials));
+        try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+            var initials = NameUtils.getInitials(name);
+            generateIconToStream(
+                    name, outputStream, out -> {
+                        try {
+                            out.write(
+                                    "<text x=\"50%\" y=\"50%\" text-anchor=\"middle\" dominant-baseline=\"middle\" class=\"fill-white font-bold text-[30px] font-sans\">");
+                            out.write(initials);
+                            out.write("</text>");
+                        } catch (IOException e) {
+                            throw new JazzIconGenerationException("error while generating icon with initials", e);
+                        }
+                    });
+            return outputStream.toString(StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            throw new JazzIconGenerationException("error while generating icon with initials", e);
+        }
     }
 
     public int getShapeCount() {
         return shapeCount;
     }
 
-    public void setShapeCount(int shapeCount) {
+    public JazzIcon setShapeCount(int shapeCount) {
         if (shapeCount <= 0) {
             throw new IllegalArgumentException("shapeCount must be > 0");
         }
         if (shapeCount + 1 > baseColors.getColors().size()) {
             throw new IllegalArgumentException(
-                    "Insufficient base colors, shape count list size must be higher than shape count + 1");
+                    "Insufficient base colors, shapeCount list size must be higher than shapeCount + 1");
         }
         this.shapeCount = shapeCount;
+        return this;
     }
 
     public int getWobble() {
         return wobble;
     }
 
-    public void setWobble(int wobble) {
+    public JazzIcon setWobble(int wobble) {
         if (wobble <= 0) {
             throw new IllegalArgumentException("wobble must be > 0");
         }
         this.wobble = wobble;
+        return this;
     }
 
-    @NonNull public ColorPalettes getBaseColors() {
+    @NonNull
+    public ColorPalettes getBaseColors() {
         return baseColors;
     }
 
-    public void setBaseColors(ColorPalettes baseColors) {
+    public JazzIcon setBaseColors(ColorPalettes baseColors) {
         if (Objects.isNull(baseColors)) {
             throw new IllegalArgumentException("baseColors must not be null");
         }
         if (shapeCount + 1 > baseColors.getColors().size()) {
             throw new IllegalArgumentException(
-                    "Insufficient base colors, shape count list size must be higher than shape count + 1");
+                    "Insufficient base colors, shapeCount list size must be higher than shapeCount + 1");
         }
         this.baseColors = baseColors;
+        return this;
     }
 
-    @NonNull public String getAllowedCharacters() {
-        return allowedCharacters;
+    @NonNull
+    public String getAllowedCharactersForPaddingText() {
+        return allowedCharactersForPaddingText;
     }
 
-    public void setAllowedCharacters(String allowedCharacters) {
-        if (StringUtils.isBlank(allowedCharacters)) {
+    public JazzIcon setAllowedCharactersForPaddingText(String allowedCharactersForPaddingText) {
+        if (StringUtils.isBlank(allowedCharactersForPaddingText)) {
             throw new IllegalArgumentException("allowedCharacters must not be just blanks, an empty string or null");
         }
-        this.allowedCharacters = allowedCharacters;
+        this.allowedCharactersForPaddingText = allowedCharactersForPaddingText;
+        return this;
     }
 
-    @NonNull public RandomGenerator getRandomGenerator() {
+    @NonNull
+    public RandomGenerator getRandomGenerator() {
         return randomGenerator;
     }
 
-    public void setRandomGenerator(RandomGenerator randomGenerator) {
+    public JazzIcon setRandomGenerator(RandomGenerator randomGenerator) {
         if (Objects.isNull(randomGenerator)) {
             throw new IllegalArgumentException("randomGenerator must not be null");
         }
         this.randomGenerator = randomGenerator;
+        return this;
+    }
+
+    public record JazzIconBuilder(JazzIcon jazzIcon) {
+        public JazzIconBuilder() {
+            this(new JazzIcon());
+        }
+
+        public JazzIconBuilder withShapeCount(int shapeCount) {
+            jazzIcon.setShapeCount(shapeCount);
+            return this;
+        }
+
+        public JazzIconBuilder withWobble(int wobble) {
+            jazzIcon.setWobble(wobble);
+            return this;
+        }
+
+        public JazzIconBuilder withBaseColors(ColorPalettes baseColors) {
+            jazzIcon.setBaseColors(baseColors);
+            return this;
+        }
+
+        public JazzIconBuilder withAllowedCharactersForPaddingText(String allowedCharacters) {
+            jazzIcon.setAllowedCharactersForPaddingText(allowedCharacters);
+            return this;
+        }
+
+        public JazzIconBuilder withRandomGenerator(RandomGenerator randomGenerator) {
+            jazzIcon.setRandomGenerator(randomGenerator);
+            return this;
+        }
+
+        public JazzIcon build() {
+            return jazzIcon;
+        }
     }
 }
