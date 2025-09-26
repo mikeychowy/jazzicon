@@ -12,4 +12,4 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 @Documented
 @Retention(RUNTIME)
 @Target({TYPE, METHOD, CONSTRUCTOR})
-public @interface ExcludeGeneratedOrSpecialCaseFromCoverage {}
+@interface ExcludeGeneratedOrSpecialCaseFromCoverage {}

@@ -1,5 +1,7 @@
 package io.github.mikeychowy.jazzicon;
 
+@SuppressWarnings({"unused"})
+@ExcludeGeneratedOrSpecialCaseFromCoverage
 public class JazzIconGenerationException extends RuntimeException {
     public JazzIconGenerationException(String message) {
         super(message);

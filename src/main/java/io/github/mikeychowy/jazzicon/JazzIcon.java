@@ -3,6 +3,7 @@ package io.github.mikeychowy.jazzicon;
 import com.github.ajalt.colormath.RenderCondition;
 import com.github.ajalt.colormath.model.HSV;
 import com.github.ajalt.colormath.model.RGB;
+import com.machinezoo.noexception.Exceptions;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -16,7 +17,6 @@ import java.util.Base64;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 import org.apache.commons.lang3.StringUtils;
@@ -27,7 +27,7 @@ import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@SuppressWarnings({"unused"})
+@SuppressWarnings({"unused", "UnusedReturnValue"})
 public class JazzIcon {
     public static final RandomGenerator DEFAULT_RANDOM_GENERATOR = new Well512a();
     public static final int DEFAULT_SHAPE_COUNT = 4;
@@ -94,7 +94,7 @@ public class JazzIcon {
         this.randomGenerator = randomGenerator;
     }
 
-    static String rotateColor(@NonNull String hexColor, double hueShift) {
+    protected static String rotateColor(@NonNull String hexColor, double hueShift) {
         RGB rgb = RGB.Companion.invoke(hexColor);
         HSV hsv = rgb.toHSV();
         double newHue = ((hsv.getH() + hueShift) % 360.0);
@@ -114,7 +114,7 @@ public class JazzIcon {
         return new JazzIconBuilder();
     }
 
-    void nextTransform(int index, Writer out) throws IOException {
+    protected void nextTransform(int index, @NonNull Writer out) throws IOException {
         double firstRotation = randomGenerator.nextDouble();
         double boost = randomGenerator.nextDouble();
         double secondRotation = randomGenerator.nextDouble();
@@ -124,27 +124,32 @@ public class JazzIcon {
         double y = Math.sin(angle) * velocity;
         double r = firstRotation * 360 + secondRotation * 180;
 
-        out.write("translate(%s %s) rotate(%s 50 50)"
+        out.append("translate(%s %s) rotate(%s 50 50)"
                 .formatted(
                         String.format(Locale.US, THREE_POINTS_DECIMAL_FORMAT, x),
                         String.format(Locale.US, THREE_POINTS_DECIMAL_FORMAT, y),
                         String.format(Locale.US, ONE_POINT_DECIMAL_FORMAT, r)));
     }
 
-    void nextColor(@NonNull List<String> rotatedColors, Writer out) throws IOException {
+    protected void nextColor(@NonNull List<String> rotatedColors, @NonNull Writer out) throws IOException {
         randomGenerator.nextDouble();
         var position = randomGenerator.nextDouble();
         int index = (int) Math.floor((rotatedColors.size() - 1) * position);
+        log.debug("nextColor: initial index={}, initial position={}", index, position);
         while (index >= rotatedColors.size() || index < 0) {
+            log.debug("nextColor: index is way out of the list, regenerating");
             position = randomGenerator.nextDouble();
             index = (int) Math.floor((rotatedColors.size() - 1) * position);
         }
+        log.debug("nextColor: final index={}, final position={}", index, position);
 
         var color = rotatedColors.remove(index);
+        log.debug("nextColor: color from list = '{}'", color);
         if (StringUtils.isBlank(color) || !ColorUtils.isValidHexColor(color)) {
+            log.debug("nextColor: color from list is invalid, either blank or not a valid hex color, outputting white");
             color = "#FFFFFF";
         }
-        out.write(color);
+        out.append(color);
     }
 
     public List<String> getSvgClasses() {
@@ -210,20 +215,25 @@ public class JazzIcon {
                 svgStyles.stream().filter(StringUtils::isNotBlank).toList());
     }
 
-    void createShapes(@NonNull List<String> rotatedColors, Writer out) throws IOException {
+    protected void createShapes(@NonNull List<String> rotatedColors, @NonNull Writer out) throws IOException {
+        log.debug("Creating shapes for rotated colors: {}", rotatedColors);
         List<String> mutableRotatedColors = new ArrayList<>(rotatedColors);
 
         // first line
-        out.write("<rect x=\"0\" y=\"0\" width=\"100%\" height=\"100%\" fill=\"");
+        log.debug("creating base shape");
+        out.append("<rect x=\"0\" y=\"0\" width=\"100%\" height=\"100%\" fill=\"");
+        log.debug("selecting random color for base shape");
         nextColor(mutableRotatedColors, out);
-        out.write("\" />");
+        out.append("\" />");
 
+        log.debug("creating {} shapes", shapeCount);
         for (int i = 0; i < shapeCount; i++) {
-            out.write("<rect x=\"0\" y=\"0\" width=\"100%\" height=\"100%\" transform=\"");
+            log.debug("creating shape number {}", i);
+            out.append("<rect x=\"0\" y=\"0\" width=\"100%\" height=\"100%\" transform=\"");
             nextTransform(i, out);
-            out.write("\" fill=\"");
+            out.append("\" fill=\"");
             nextColor(mutableRotatedColors, out);
-            out.write("\" />");
+            out.append("\" />");
         }
     }
 
@@ -238,103 +248,143 @@ public class JazzIcon {
         return sb.toString();
     }
 
-    public void generateIconToStream(@NonNull String text, @NonNull OutputStream outputStream) throws IOException {
+    // no need to test, convenience method only, delegates to the actual method
+    @ExcludeGeneratedOrSpecialCaseFromCoverage
+    public void generateIconToStream(@NonNull String text, @NonNull OutputStream outputStream)
+            throws JazzIconGenerationException {
         generateIconToStream(text, outputStream, null);
     }
 
     public void generateIconToStream(
-            @NonNull String text, @NonNull OutputStream outputStream, @Nullable Consumer<Writer> writerConsumer)
-            throws IOException {
-        try (OutputStreamWriter osw = new OutputStreamWriter(outputStream, StandardCharsets.UTF_8)) {
-            generateIconToWriter(text, osw, writerConsumer);
-            osw.flush();
+            @NonNull String text, @NonNull OutputStream outputStream, @Nullable Consumer<Writer> svgBodyInterceptor)
+            throws JazzIconGenerationException {
+        Exceptions.wrap(e -> new JazzIconGenerationException(
+                        "An error has been encountered while trying to generate icon to stream", e))
+                .run(() -> {
+                    try (OutputStreamWriter osw = new OutputStreamWriter(outputStream, StandardCharsets.UTF_8)) {
+                        generateIconToWriter(text, osw, svgBodyInterceptor);
+                        osw.flush();
+                    }
+                });
+    }
+
+    private long tryBestGetSeedFromText(@NonNull String safeText) {
+        try {
+            return Long.parseUnsignedLong(safeText.substring(2, Math.min(10, safeText.length())), 16);
+        } catch (NumberFormatException e) {
+            log.debug("Could not parse text '{}' to Long, falling back to hashCode", safeText, e);
+            // fallback to hash if not hex
+            return safeText.hashCode();
         }
     }
 
     public void generateIconToWriter(
-            @NonNull String text, @NonNull Writer out, @Nullable Consumer<Writer> writerConsumer) {
-        String safeText = StringUtils.trimToEmpty(text);
-        if (safeText.length() <= 3) {
-            safeText = randomStringFromAllowedChars(6) + safeText + randomStringFromAllowedChars(6);
-        }
+            @NonNull String text, @NonNull Writer out, @Nullable Consumer<Writer> svgBodyInterceptor)
+            throws JazzIconGenerationException {
+        Exceptions.wrap(e -> new JazzIconGenerationException(
+                        "An error has been encountered while trying to generate icon to writer", e))
+                .run(() -> {
+                    try {
+                        // lock the generation, ensuring actual randomized seed and other values
+                        // remain constant for the round
+                        // this is almost the same effect as synchronized, with different semantics
+                        // and quite some different implementation inside
+                        lock.lock();
+                        log.debug("original text: {}", text);
+                        String safeText = StringUtils.trimToEmpty(text);
+                        if (safeText.length() <= 3) {
+                            log.debug(
+                                    "original text is too short, padding 6 characters to left and right (respectively) from allow"
+                                            + " list: {}",
+                                    allowedCharactersForPaddingText);
+                            safeText = randomStringFromAllowedChars(6) + safeText + randomStringFromAllowedChars(6);
+                        }
+                        log.debug("safe to use text: {}", safeText);
 
-        Set<String> baseActualColors = baseColors.getColors();
+                        long seed = tryBestGetSeedFromText(safeText);
+                        randomGenerator.setSeed(seed);
+                        log.debug("random generator seed: {}", seed);
 
-        long seed;
-        try {
-            seed = Long.parseUnsignedLong(safeText.substring(2, Math.min(10, safeText.length())), 16);
-        } catch (NumberFormatException e) {
-            // fallback to hash if not hex
-            seed = safeText.hashCode();
-        }
+                        double position = randomGenerator.nextDouble();
+                        log.debug("random position: {}", position);
+                        double hueShift = (30 * position) - (wobble / 2.0F);
+                        log.debug("hue shift: {}", hueShift);
 
-        try {
-            // lock the randomGenerator
-            lock.lock();
-            randomGenerator.setSeed(seed);
+                        List<String> rotatedColors = baseColors.getColors().stream()
+                                .map(base -> rotateColor(base, hueShift))
+                                .toList();
+                        log.debug("rotated colors: {}", rotatedColors);
 
-            double position = randomGenerator.nextDouble();
-            double hueShift = (30 * position) - (wobble / 2.0F);
+                        // append head
+                        log.debug("appending head");
+                        out.append("<svg ");
+                        if (!svgClasses.isEmpty()) {
+                            log.debug("svg classes are not empty, appending: {}", svgClasses);
+                            out.append("class=\"")
+                                    .append(String.join(" ", svgClasses))
+                                    .append("\" ");
+                        }
+                        if (!svgStyles.isEmpty()) {
+                            log.debug("svg styles are not empty, appending: {}", svgStyles);
+                            out.append("style=\"")
+                                    .append(String.join(" ", svgStyles))
+                                    .append("\" ");
+                        }
+                        out.append("xmlns=\"http://www.w3.org/2000/svg\" x=\"0\" y=\"0\" viewBox=\"0 0 100 100\">");
 
-            // need MUTABLE list
-            List<String> rotatedColors = baseActualColors.stream()
-                    .map(base -> rotateColor(base, hueShift))
-                    .toList();
+                        createShapes(rotatedColors, out);
 
-            // append head
-            out.write("<svg ");
-            if (!svgClasses.isEmpty()) {
-                out.write("class=\"" + String.join(" ", svgClasses) + "\" ");
-            }
-            if (!svgStyles.isEmpty()) {
-                out.write("style=\"" + String.join(" ", svgStyles) + "\" ");
-            }
-            out.write("xmlns=\"http://www.w3.org/2000/svg\" x=\"0\" y=\"0\" viewBox=\"0 0 100 100\">");
+                        // in case needs to add other shapes or whatever before appending tail
+                        if (Objects.nonNull(svgBodyInterceptor)) {
+                            log.debug("writer consumer is set, accepting");
+                            log.debug(
+                                    "DISCLAIMER: ANYTHING YOU DO IN THE CONSUMER TO THE SVG IS NOT GUARANTEED TO BE SAFE, I TAKE NO RESPONSIBILITY FOR YOUR OPERATION(S)");
+                            svgBodyInterceptor.accept(out);
+                        }
 
-            createShapes(rotatedColors, out);
+                        // append tail
+                        log.debug("appending tail");
+                        out.append("</svg>");
+                    } finally {
+                        lock.unlock();
+                    }
+                });
+    }
 
-            // in case needs to add other shapes or whatever before appending tail
-            if (Objects.nonNull(writerConsumer)) {
-                writerConsumer.accept(out);
-            }
-
-            // append tail
-            out.write("</svg>");
-        } catch (IOException e) {
-            throw new JazzIconGenerationException(
-                    "An error with the Writer has been encountered while trying to generate JazzIcon", e);
-        } finally {
-            lock.unlock();
-        }
+    public String generateIcon(@NonNull String text, @Nullable Consumer<Writer> svgBodyInterceptor)
+            throws JazzIconGenerationException {
+        return Exceptions.wrap(e -> new JazzIconGenerationException("error while generating icon", e))
+                .get(() -> {
+                    try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+                        generateIconToStream(text, outputStream, svgBodyInterceptor);
+                        return outputStream.toString(StandardCharsets.UTF_8);
+                    }
+                });
     }
 
     public String generateIcon(@NonNull String text) {
-        try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
-            generateIconToStream(text, outputStream);
-            return outputStream.toString(StandardCharsets.UTF_8);
-        } catch (IOException e) {
-            throw new JazzIconGenerationException("error while generating icon", e);
-        }
+        return generateIcon(text, null);
     }
 
-    public String generateIconWithInitials(@NonNull String name) {
-        try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
-            var initials = NameUtils.getInitials(name);
-            generateIconToStream(
-                    name, outputStream, out -> {
-                        try {
-                            out.write(
-                                    "<text x=\"50%\" y=\"50%\" text-anchor=\"middle\" dominant-baseline=\"middle\" class=\"fill-white font-bold text-[30px] font-sans\">");
-                            out.write(initials);
-                            out.write("</text>");
-                        } catch (IOException e) {
-                            throw new JazzIconGenerationException("error while generating icon with initials", e);
-                        }
-                    });
-            return outputStream.toString(StandardCharsets.UTF_8);
-        } catch (IOException e) {
-            throw new JazzIconGenerationException("error while generating icon with initials", e);
-        }
+    public String generateIconWithInitials(@NonNull String name) throws JazzIconGenerationException {
+        return Exceptions.wrap(e -> new JazzIconGenerationException("error while generating icon", e))
+                .get(() -> {
+                    try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+                        var initials = NameUtils.getInitials(name);
+                        generateIconToStream(
+                                name,
+                                outputStream,
+                                Exceptions.wrap(e -> new JazzIconGenerationException(
+                                                "error while generating icon with initials", e))
+                                        .consumer(out -> {
+                                            out.append(
+                                                    "<text x=\"50%\" y=\"50%\" text-anchor=\"middle\" dominant-baseline=\"middle\" class=\"fill-white font-bold text-[30px] font-sans\">");
+                                            out.append(initials);
+                                            out.append("</text>");
+                                        }));
+                        return outputStream.toString(StandardCharsets.UTF_8);
+                    }
+                });
     }
 
     public int getShapeCount() {
