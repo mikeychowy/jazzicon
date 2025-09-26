@@ -129,11 +129,10 @@ class JazzIconTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("must be higher than shapeCount");
 
-        ex = catchThrowableOfType(
-                IllegalArgumentException.class, setupJazzIconThrowingCondition(jazzIcon -> {
-                    jazzIcon.setShapeCount(9);
-                    jazzIcon.setBaseColors(ColorPalettes.SECTION_1);
-                }));
+        ex = catchThrowableOfType(IllegalArgumentException.class, setupJazzIconThrowingCondition(jazzIcon -> {
+            jazzIcon.setShapeCount(9);
+            jazzIcon.setBaseColors(ColorPalettes.SECTION_1);
+        }));
         assertThat(ex)
                 .isNotNull()
                 .isInstanceOf(IllegalArgumentException.class)
@@ -283,16 +282,15 @@ class JazzIconTest {
     void test_generateIcon_whenBodyInterceptorIsNotEmpty_bodyOperationSuccess() {
         var jazzIcon = new JazzIcon();
 
-        var result = jazzIcon.generateIcon(
-                "Harry", writer -> {
-                    try {
-                        writer.write(MessageFormat.format(
-                                "<text x=\"50%\" y=\"50%\" text-anchor=\"middle\" dominant-baseline=\"middle\" class=\"fill-white font-bold text-[30px] font-sans\">{0}</text>",
-                                NameUtils.getInitials("Harry")));
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
-                    }
-                });
+        var result = jazzIcon.generateIcon("Harry", writer -> {
+            try {
+                writer.write(MessageFormat.format(
+                        "<text x=\"50%\" y=\"50%\" text-anchor=\"middle\" dominant-baseline=\"middle\" class=\"fill-white font-bold text-[30px] font-sans\">{0}</text>",
+                        NameUtils.getInitials("Harry")));
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
         assertThat(result)
                 .isNotNull()
                 .isNotBlank()

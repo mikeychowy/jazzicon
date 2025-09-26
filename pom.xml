@@ -34,11 +34,11 @@
       <version>${colormath.version}</version>
     </dependency>
     <dependency>
-        <groupId>com.machinezoo.noexception</groupId>
-        <artifactId>noexception</artifactId>
-        <version>1.9.1</version>
+      <groupId>com.machinezoo.noexception</groupId>
+      <artifactId>noexception</artifactId>
+      <version>1.9.1</version>
     </dependency>
-      <dependency>
+    <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-lang3</artifactId>
       <version>${apache.commons.lang3.version}</version>
@@ -64,13 +64,13 @@
       <version>2.0.17</version>
     </dependency>
 
-      <!--  Test Dependencies    -->
-      <dependency>
-          <groupId>com.github.bgalek.security.svg</groupId>
-          <artifactId>safe-svg</artifactId>
-          <version>1.1.8</version>
-          <scope>test</scope>
-      </dependency>
+    <!--  Test Dependencies    -->
+    <dependency>
+      <groupId>com.github.bgalek.security.svg</groupId>
+      <artifactId>safe-svg</artifactId>
+      <version>1.1.8</version>
+      <scope>test</scope>
+    </dependency>
     <dependency>
       <groupId>io.avaje</groupId>
       <artifactId>avaje-spi-service</artifactId>
@@ -93,12 +93,12 @@
       <groupId>io.jstach.rainbowgum</groupId>
       <artifactId>rainbowgum-slf4j</artifactId>
       <version>${test.rainbowgum.version}</version>
-        <scope>test</scope>
+      <scope>test</scope>
     </dependency>
-      <dependency>
-          <groupId>org.apache.xmlgraphics</groupId>
-          <artifactId>batik-all</artifactId>
-          <version>1.19</version>
+    <dependency>
+      <groupId>org.apache.xmlgraphics</groupId>
+      <artifactId>batik-all</artifactId>
+      <version>1.19</version>
       <scope>test</scope>
     </dependency>
     <dependency>

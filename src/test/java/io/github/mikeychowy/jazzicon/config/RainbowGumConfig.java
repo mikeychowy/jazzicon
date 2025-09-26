@@ -10,22 +10,20 @@ import org.jspecify.annotations.NonNull;
 
 @ServiceProvider(value = RainbowGumProvider.class)
 public class RainbowGumConfig implements RainbowGumProvider {
-    @NonNull
-    @Override
+    @NonNull @Override
     public Optional<RainbowGum> provide(@NonNull LogConfig config) {
         return RainbowGum.builder(config) //
                 .route(r -> {
                     r.level(System.Logger.Level.DEBUG);
-                    r.appender(
-                            "console", a -> {
-                                a.encoder(new PatternEncoderBuilder("console")
-                                        // We use the pattern encoder which follows logback pattern syntax.
-                                        .pattern(
-                                                "%cyan([%d{yyyy-MM-dd HH:mm:ss.SSS}]) %highlight([%thread]) %magenta(%-5level) %green(%logger{36}:%L) - %msg")
-                                        // We use properties to override the above pattern if set.
-                                        .fromProperties(config.properties())
-                                        .build());
-                            });
+                    r.appender("console", a -> {
+                        a.encoder(new PatternEncoderBuilder("console")
+                                // We use the pattern encoder which follows logback pattern syntax.
+                                .pattern(
+                                        "%cyan([%d{yyyy-MM-dd HH:mm:ss.SSS}]) %highlight([%thread]) %magenta(%-5level) %green(%logger{36}:%L) - %msg")
+                                // We use properties to override the above pattern if set.
+                                .fromProperties(config.properties())
+                                .build());
+                    });
                 })
                 .optional();
     }

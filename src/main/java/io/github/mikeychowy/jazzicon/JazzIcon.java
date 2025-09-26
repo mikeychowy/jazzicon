@@ -415,8 +415,7 @@ public class JazzIcon {
         return this;
     }
 
-    @NonNull
-    public ColorPalettes getBaseColors() {
+    @NonNull public ColorPalettes getBaseColors() {
         return baseColors;
     }
 
@@ -432,8 +431,7 @@ public class JazzIcon {
         return this;
     }
 
-    @NonNull
-    public String getAllowedCharactersForPaddingText() {
+    @NonNull public String getAllowedCharactersForPaddingText() {
         return allowedCharactersForPaddingText;
     }
 
@@ -445,8 +443,7 @@ public class JazzIcon {
         return this;
     }
 
-    @NonNull
-    public RandomGenerator getRandomGenerator() {
+    @NonNull public RandomGenerator getRandomGenerator() {
         return randomGenerator;
     }
 
