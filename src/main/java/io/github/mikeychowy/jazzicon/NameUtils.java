@@ -26,7 +26,7 @@ public final class NameUtils {
      *     - {@code ""} -> ?
      *     - {@code null} -> ?
      * </pre>
-     *
+     * <p>
      * By the examples above, we can see that any names using dashes (-) or other such separator aren't taken into
      * account for the resulting initial. <br>
      * Also, any names with a word separator indicating 'of' such as 'de' in Latin based names will be taken as the

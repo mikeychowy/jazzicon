@@ -27,8 +27,8 @@ public class JazzIconGenerationException extends RuntimeException {
      * runtime exception's detail message.
      *
      * @param message the detail message (which is saved for later retrieval by the {@link #getMessage()} method).
-     * @param cause the cause (which is saved for later retrieval by the {@link #getCause()} method). (A {@code null}
-     *     value is permitted, and indicates that the cause is nonexistent or unknown.)
+     * @param cause   the cause (which is saved for later retrieval by the {@link #getCause()} method). (A {@code null}
+     *                value is permitted, and indicates that the cause is nonexistent or unknown.)
      */
     public JazzIconGenerationException(String message, Throwable cause) {
         super(message, cause);
@@ -40,7 +40,7 @@ public class JazzIconGenerationException extends RuntimeException {
      * useful for runtime exceptions that are little more than wrappers for other throwables.
      *
      * @param cause the cause (which is saved for later retrieval by the {@link #getCause()} method). (A {@code null}
-     *     value is permitted, and indicates that the cause is nonexistent or unknown.)
+     *              value is permitted, and indicates that the cause is nonexistent or unknown.)
      */
     public JazzIconGenerationException(Throwable cause) {
         super(cause);
@@ -50,10 +50,10 @@ public class JazzIconGenerationException extends RuntimeException {
      * Constructs a new runtime exception with the specified detail message, cause, suppression enabled or disabled, and
      * writable stack trace enabled or disabled.
      *
-     * @param message the detail message.
-     * @param cause the cause. (A {@code null} value is permitted, and indicates that the cause is nonexistent or
-     *     unknown.)
-     * @param enableSuppression whether suppression is enabled or disabled
+     * @param message            the detail message.
+     * @param cause              the cause. (A {@code null} value is permitted, and indicates that the cause is nonexistent or
+     *                           unknown.)
+     * @param enableSuppression  whether suppression is enabled or disabled
      * @param writableStackTrace whether the stack trace should be writable
      */
     public JazzIconGenerationException(

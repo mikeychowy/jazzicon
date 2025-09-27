@@ -40,13 +40,21 @@ public class JazzIcon {
      * Default random generator
      */
     public static final RandomGenerator DEFAULT_RANDOM_GENERATOR = new Well512a();
-    /** Default count of shapes to be generated */
+    /**
+     * Default count of shapes to be generated
+     */
     public static final int DEFAULT_SHAPE_COUNT = 4;
-    /** Default wobble for randomness purpose when shifting colors */
+    /**
+     * Default wobble for randomness purpose when shifting colors
+     */
     public static final int DEFAULT_WOBBLE = 30;
-    /** Default theme of the icon */
+    /**
+     * Default theme of the icon
+     */
     public static final ColorPalettes DEFAULT_BASE_COLORS = ColorPalettes.JAZZ_ICON;
-    /** Default allow list for padding in case supplied seed text's length is lesser than 3 */
+    /**
+     * Default allow list for padding in case supplied seed text's length is lesser than 3
+     */
     public static final String DEFAULT_ALLOWED_CHARACTERS =
             "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
     /**
@@ -61,7 +69,9 @@ public class JazzIcon {
      * String format pattern to take only 1 point of a decimal: 2.13 -> 2.1
      */
     protected static final String ONE_POINT_DECIMAL_FORMAT = "%.1f";
-    /** The logger */
+    /**
+     * The logger
+     */
     private static final Logger log = LoggerFactory.getLogger(JazzIcon.class);
     /**
      * Lock to make sure operations are thread-safe
@@ -91,10 +101,14 @@ public class JazzIcon {
      * allow list for characters to be randomly picked during seed text padding
      */
     protected String allowedCharactersForPaddingText;
-    /** the {@link RandomGenerator} to be used to generate random values for JazzIcon calculation. */
+    /**
+     * the {@link RandomGenerator} to be used to generate random values for JazzIcon calculation.
+     */
     protected RandomGenerator randomGenerator;
 
-    /** Default constructor using all default values. For the less adventurous of us. */
+    /**
+     * Default constructor using all default values. For the less adventurous of us.
+     */
     public JazzIcon() {
         this(
                 DEFAULT_SHAPE_COUNT,
@@ -107,13 +121,13 @@ public class JazzIcon {
     /**
      * The real constructor of JazzIcon generator, control all the parameters yourself.
      *
-     * @param shapeCount the count of the shapes to be generated, MUST be > 0
-     * @param wobble the wobble used for color rotating into hue shift, randomness purpose, MUST be > 0
-     * @param baseColors the {@link ColorPalettes} to be used for the theme of the icon
+     * @param shapeCount                      the count of the shapes to be generated, MUST be > 0
+     * @param wobble                          the wobble used for color rotating into hue shift, randomness purpose, MUST be > 0
+     * @param baseColors                      the {@link ColorPalettes} to be used for the theme of the icon
      * @param allowedCharactersForPaddingText allow list for characters to be randomly picked during seed text padding
-     *     (when supplied seed text's length is lesser or equals 3)
-     * @param randomGenerator the {@link RandomGenerator} to be used to generate random values for JazzIcon calculation.
-     *     MersenneTwister is not recommended by all the math papers, so I used Well as a default
+     *                                        (when supplied seed text's length is lesser or equals 3)
+     * @param randomGenerator                 the {@link RandomGenerator} to be used to generate random values for JazzIcon calculation.
+     *                                        MersenneTwister is not recommended by all the math papers, so I used Well as a default
      */
     public JazzIcon(
             int shapeCount,
@@ -157,7 +171,7 @@ public class JazzIcon {
      *
      * @param hexColor the original hex of the color to be rotated
      * @param hueShift the hueShift for the color on the color wheel, default logic for this is {@code (30 *
-     *     randomlyGeneratedPosition) - (wobble / 2.0F)}
+     *                 randomlyGeneratedPosition) - (wobble / 2.0F)}
      * @return the rotated color hex
      */
     protected static String rotateColor(@NonNull String hexColor, double hueShift) {
@@ -195,7 +209,7 @@ public class JazzIcon {
      * Generate the next transformation of the svg shape, changes the shape's position and rotation.
      *
      * @param index the index of the shape for which the transform will be generated, extra randomness
-     * @param out the {@link Writer} to append the transform into
+     * @param out   the {@link Writer} to append the transform into
      * @throws IOException if anything goes wrong when appending the generated transform to the {@link Writer}.
      */
     protected void nextTransform(int index, @NonNull Writer out) throws IOException {
@@ -224,9 +238,9 @@ public class JazzIcon {
      * Randomly pick the next color to be used from the list of baseColors rotated using hueShift.
      *
      * @param rotatedColors the list of colors that has been rotated according to the hueShift, MUST BE MUTABLE, WILL
-     *     REMOVE THE PICKED COLOR FROM THE LIST, IF YOU HAVE AN IMMUTABLE LIST, COPY THE VALUES FROM IT USING
-     *     {@code new ArrayList()}
-     * @param out the {@link Writer} to append the picked color into
+     *                      REMOVE THE PICKED COLOR FROM THE LIST, IF YOU HAVE AN IMMUTABLE LIST, COPY THE VALUES FROM IT USING
+     *                      {@code new ArrayList()}
+     * @param out           the {@link Writer} to append the picked color into
      * @throws IOException if anything goes wrong when appending the randomly picked color to the {@link Writer}.
      */
     protected void nextColor(@NonNull List<String> rotatedColors, @NonNull Writer out) throws IOException {
@@ -477,7 +491,7 @@ public class JazzIcon {
      * For now, only generate rectangles of randomized colors and positions.
      *
      * @param rotatedColors the list of colors that has been rotated according to the hueShift
-     * @param out {@link Writer} to append shapes into.
+     * @param out           {@link Writer} to append shapes into.
      * @throws IOException if anything goes wrong when generating the shapes.
      */
     protected void createShapes(@NonNull List<String> rotatedColors, @NonNull Writer out) throws IOException {
@@ -558,10 +572,10 @@ public class JazzIcon {
     /**
      * Generate a JazzIcon to a {@link Writer}, with an optional body interceptor
      *
-     * @param text the text to be the seed of the icon
-     * @param out a {@link Writer} to write the icon into
+     * @param text               the text to be the seed of the icon
+     * @param out                a {@link Writer} to write the icon into
      * @param svgBodyInterceptor optional body interceptor, in case you want to insert your own elements to the middle
-     *     of the icon body, or anything else to do. Optional, you can pass null
+     *                           of the icon body, or anything else to do. Optional, you can pass null
      * @throws JazzIconGenerationException if anything goes wrong when generating the icon.
      */
     public void generateIconToWriter(
@@ -678,9 +692,9 @@ public class JazzIcon {
     /**
      * Generate a JazzIcon directly to a String, with an optional body interceptor
      *
-     * @param text the text to be the seed of the icon
+     * @param text               the text to be the seed of the icon
      * @param svgBodyInterceptor optional body interceptor, in case you want to insert your own elements to the middle
-     *     of the icon body, or anything else to do. Optional, you can pass null
+     *                           of the icon body, or anything else to do. Optional, you can pass null
      * @return the SVG string of the JazzIcon
      * @throws JazzIconGenerationException if anything goes wrong when generating the icon.
      */
@@ -966,7 +980,9 @@ public class JazzIcon {
      */
     @SuppressWarnings("ClassCanBeRecord")
     public static class JazzIconBuilder {
-        /** The immutable JazzIcon reference for the builder */
+        /**
+         * The immutable JazzIcon reference for the builder
+         */
         private final JazzIcon jazzIcon;
 
         /**
@@ -1023,7 +1039,7 @@ public class JazzIcon {
          * padding
          *
          * @param allowedCharacters allowedCharactersForPaddingText allow list for characters to be randomly picked
-         *     during seed text padding (when supplied seed text's length is lesser or equals 3)
+         *                          during seed text padding (when supplied seed text's length is lesser or equals 3)
          * @return the builder
          */
         public JazzIconBuilder withAllowedCharactersForPaddingText(String allowedCharacters) {
@@ -1035,7 +1051,7 @@ public class JazzIcon {
          * Change the {@link RandomGenerator} to be used to generate random values for JazzIcon calculation.
          *
          * @param randomGenerator the {@link RandomGenerator} to be used to generate random values for JazzIcon
-         *     calculation.
+         *                        calculation.
          * @return the builder
          */
         public JazzIconBuilder withRandomGenerator(RandomGenerator randomGenerator) {

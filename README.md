@@ -40,7 +40,7 @@ Generate the icon to either direct String, OutputStream, or even a Writer
 ```java
 import io.github.mikeychowy.jazzicon.JazzIcon;
 
-static void main(String[] args) {
+void main(String[] args) {
   JazzIcon jazzIcon = new JazzIcon();
   // generate to string and use directly
   String svg = jazzIcon.generateIcon("Harry");
@@ -56,7 +56,7 @@ static void main(String[] args) {
     String writerSvg = osw.toString()
 ```
 
-###       
+###         
 
 ## Dependencies
 
