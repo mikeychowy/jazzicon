@@ -1,10 +1,38 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>io.github.mikeychowy.jazzicon</groupId>
   <artifactId>jazzicon</artifactId>
   <version>1.0.0</version>
+  <packaging>jar</packaging>
+
+  <name>jazzicon</name>
+  <description>Small Utility to generate JazzIcons</description>
+  <url>https://github.com/mikeychowy/jazzicon</url>
+
+  <licenses>
+    <license>
+      <name>The Apache Software License, Version 2.0</name>
+      <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+    </license>
+  </licenses>
+
+  <developers>
+    <developer>
+      <name>Michael Chow</name>
+      <email>chowmichaelworkmail@gmail.com</email>
+      <organization>Personal</organization>
+      <organizationUrl>https://github.com/mikeychowy</organizationUrl>
+    </developer>
+  </developers>
+
+  <scm>
+    <connection>scm:git:git://github.com/mikeychowy/jazzicon.git</connection>
+    <developerConnection>scm:git:ssh://github.com:/mikeychowy/jazzicon.git</developerConnection>
+    <url>https://github.com/mikeychowy/jazzicon/tree/master</url>
+  </scm>
 
   <properties>
     <apache.commons.lang3.version>3.18.0</apache.commons.lang3.version>
@@ -42,11 +70,6 @@
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-lang3</artifactId>
       <version>${apache.commons.lang3.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.commons</groupId>
-      <artifactId>commons-text</artifactId>
-      <version>${apache.commons.text.version}</version>
     </dependency>
     <dependency>
       <groupId>org.hipparchus</groupId>
@@ -232,8 +255,8 @@
                 <include>.gitignore</include>
               </includes>
               <!-- define the steps to apply to those files -->
-              <trimTrailingWhitespace />
-              <endWithNewline />
+              <trimTrailingWhitespace/>
+              <endWithNewline/>
               <indent>
                 <tabs>true</tabs>
                 <spacesPerTab>4</spacesPerTab>
@@ -245,7 +268,7 @@
             <removeUnusedImports>
               <engine>cleanthat-javaparser-unnecessaryimport</engine>
             </removeUnusedImports>
-            <removeUnusedImports />
+            <removeUnusedImports/>
             <cleanthat>
               <version>2.24</version>
               <mutators>
@@ -268,7 +291,7 @@
               <formatJavadoc>true</formatJavadoc>
               <!-- defaults to false (optional, requires at least Palantir 2.39.0) -->
             </palantirJavaFormat>
-            <formatAnnotations />
+            <formatAnnotations/>
           </java>
           <pom>
             <!-- These are the defaults, you can override if you want -->
@@ -307,7 +330,7 @@
               <sortDependencyManagement>none</sortDependencyManagement>
               <!-- Sort dependency management: https://github.com/Ekryd/sortpom/wiki/SortDependencies -->
 
-              <sortDependencyExclusions />
+              <sortDependencyExclusions/>
               <!-- Sort dependency exclusions: https://github.com/Ekryd/sortpom/wiki/SortDependencies -->
 
               <sortProperties>true</sortProperties>
@@ -329,6 +352,59 @@
               <goal>apply</goal>
             </goals>
             <phase>compile</phase>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-source-plugin</artifactId>
+        <version>3.3.1</version>
+        <executions>
+          <execution>
+            <id>attach-sources</id>
+            <goals>
+              <goal>jar-no-fork</goal>
+            </goals>
+            <phase>package</phase>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <version>3.12.0</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>jar</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>net.nicoulaj.maven.plugins</groupId>
+        <artifactId>checksum-maven-plugin</artifactId>
+        <version>1.11</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>artifacts</goal>
+            </goals>
+            <phase>package</phase>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-gpg-plugin</artifactId>
+        <version>3.2.8</version>
+        <executions>
+          <execution>
+            <id>sign-artifacts</id>
+            <phase>verify</phase>
+            <goals>
+              <goal>sign</goal>
+            </goals>
           </execution>
         </executions>
       </plugin>

@@ -1,8 +1,10 @@
 package io.github.mikeychowy.jazzicon;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.io.Writer;
+import java.nio.charset.StandardCharsets;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
@@ -18,6 +20,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.assertj.core.api.Assertions.catchThrowableOfType;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -314,6 +317,39 @@ class JazzIconTest {
                 .contains("<rect")
                 .contains(
                         "<text x=\"50%\" y=\"50%\" text-anchor=\"middle\" dominant-baseline=\"middle\" class=\"fill-white font-bold text-[30px] font-sans\">H</text>");
+    }
+
+    @Test
+    void test_generateIconWithInitials_whenClassesAndStylesNotEmpty_success() {
+        var jazzIcon = new JazzIcon();
+
+        var result = jazzIcon.generateIconWithInitials("Harry", List.of("show"), List.of("padding:0;"));
+        assertThat(result)
+                .isNotNull()
+                .isNotBlank()
+                .containsOnlyOnce("<svg ")
+                .containsOnlyOnce("</svg>")
+                .contains("<rect")
+                .contains("<text class=\"show\" style=\"padding:0;\" x=\"50%\" y=\"50%\" text-anchor=\"middle\" "
+                        + "dominant-baseline=\"middle\" "
+                        + "class=\"fill-white font-bold text-[30px] font-sans\">H</text>");
+    }
+
+    @Test
+    void test_generateIconToStream_success() {
+        var jazzIcon = new JazzIcon();
+        assertThatNoException().isThrownBy(() -> {
+            try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+                jazzIcon.generateIconToStream("Harry", outputStream);
+                var icon = outputStream.toString(StandardCharsets.UTF_8);
+                assertThat(icon)
+                        .isNotNull()
+                        .isNotBlank()
+                        .containsOnlyOnce("<svg ")
+                        .containsOnlyOnce("</svg>")
+                        .contains("<rect");
+            }
+        });
     }
 
     @Test
