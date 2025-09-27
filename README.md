@@ -53,10 +53,12 @@ void main(String[] args) {
   // generate to a writer
   try (StringWriter osw = new StringWriter(outputStream, StandardCharsets.UTF_8)) {
     jazzIcon.generateIconToWriter("Harry", osw);
-    String writerSvg = osw.toString()
+    String writerSvg = osw.toString();
+  }
+}
 ```
 
-###         
+###              
 
 ## Dependencies
 
