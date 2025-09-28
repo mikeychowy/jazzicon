@@ -979,11 +979,16 @@ public class JazzIcon {
         }
     }
 
+    /** The shape type to be generated */
     protected enum ShapeType {
+        /** Corresponds to {@code <rect></rect>} */
         RECTANGLE,
+        /** Corresponds to {@code <circle></circle>} */
         CIRCLE,
+        /** Corresponds to {@code <polygon></polygon>} */
         POLYGON,
         ;
+        /** Cache static accessor for {@link #values()} so each access is not generating heavy computations anymore */
         protected static final ShapeType[] vals = values();
     }
 
