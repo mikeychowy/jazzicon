@@ -254,7 +254,7 @@ class JazzIconTest {
                 .isNotBlank()
                 .containsOnlyOnce("<svg ")
                 .containsOnlyOnce("</svg>")
-                .contains("<rect");
+                .containsAnyOf("<rect", "<circle", "<polygon");
 
         result = jazzIcon.generateIcon("ghh");
         assertThat(result)
@@ -262,7 +262,7 @@ class JazzIconTest {
                 .isNotBlank()
                 .containsOnlyOnce("<svg ")
                 .containsOnlyOnce("</svg>")
-                .contains("<rect");
+                .containsAnyOf("<rect", "<circle", "<polygon");
     }
 
     @Test
@@ -277,7 +277,7 @@ class JazzIconTest {
                 .isNotBlank()
                 .containsOnlyOnce("<svg ")
                 .containsOnlyOnce("</svg>")
-                .contains("<rect")
+                .containsAnyOf("<rect", "<circle", "<polygon")
                 .contains("class=\"show\"")
                 .contains("style=\"padding: 0;\"");
     }
@@ -290,7 +290,7 @@ class JazzIconTest {
             try {
                 writer.write(MessageFormat.format(
                         "<text x=\"50%\" y=\"50%\" text-anchor=\"middle\" dominant-baseline=\"middle\" class=\"fill-white font-bold text-[30px] font-sans\">{0}</text>",
-                        NameUtils.getInitials("Harry")));
+                        InitialUtils.getInitials("Harry")));
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -300,71 +300,9 @@ class JazzIconTest {
                 .isNotBlank()
                 .containsOnlyOnce("<svg ")
                 .containsOnlyOnce("</svg>")
-                .contains("<rect")
+                .containsAnyOf("<rect", "<circle", "<polygon")
                 .contains(
                         "<text x=\"50%\" y=\"50%\" text-anchor=\"middle\" dominant-baseline=\"middle\" class=\"fill-white font-bold text-[30px] font-sans\">H</text>");
-    }
-
-    @Test
-    void test_generateIconWithInitials_success() {
-        var jazzIcon = new JazzIcon();
-
-        var result = jazzIcon.generateIconWithInitials("Harry");
-        assertThat(result)
-                .isNotNull()
-                .isNotBlank()
-                .containsOnlyOnce("<svg ")
-                .containsOnlyOnce("</svg>")
-                .contains("<rect")
-                .contains(
-                        "<text x=\"50%\" y=\"50%\" text-anchor=\"middle\" dominant-baseline=\"middle\" class=\"fill-white font-bold text-[30px] font-sans\">H</text>");
-    }
-
-    @Test
-    void test_generateIconWithInitials_convenienceMethods_success() throws IOException {
-        var jazzIcon = new JazzIcon();
-
-        try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
-            jazzIcon.generateIconWithInitialsToStream("Harry", outputStream);
-            var result = outputStream.toString(StandardCharsets.UTF_8);
-            assertThat(result)
-                    .isNotNull()
-                    .isNotBlank()
-                    .containsOnlyOnce("<svg ")
-                    .containsOnlyOnce("</svg>")
-                    .contains("<rect")
-                    .contains(
-                            "<text x=\"50%\" y=\"50%\" text-anchor=\"middle\" dominant-baseline=\"middle\" class=\"fill-white font-bold text-[30px] font-sans\">H</text>");
-        }
-
-        try (StringWriter writer = new StringWriter()) {
-            jazzIcon.generateIconWithInitialsToWriter("Harry", writer);
-            var result = writer.toString();
-            assertThat(result)
-                    .isNotNull()
-                    .isNotBlank()
-                    .containsOnlyOnce("<svg ")
-                    .containsOnlyOnce("</svg>")
-                    .contains("<rect")
-                    .contains(
-                            "<text x=\"50%\" y=\"50%\" text-anchor=\"middle\" dominant-baseline=\"middle\" class=\"fill-white font-bold text-[30px] font-sans\">H</text>");
-        }
-    }
-
-    @Test
-    void test_generateIconWithInitials_whenClassesAndStylesNotEmpty_success() {
-        var jazzIcon = new JazzIcon();
-
-        var result = jazzIcon.generateIconWithInitials("Harry", List.of("show"), List.of("padding:0;"));
-        assertThat(result)
-                .isNotNull()
-                .isNotBlank()
-                .containsOnlyOnce("<svg ")
-                .containsOnlyOnce("</svg>")
-                .contains("<rect")
-                .contains("<text class=\"show\" style=\"padding:0;\" x=\"50%\" y=\"50%\" text-anchor=\"middle\" "
-                        + "dominant-baseline=\"middle\" "
-                        + "class=\"fill-white font-bold text-[30px] font-sans\">H</text>");
     }
 
     @Test
@@ -379,7 +317,7 @@ class JazzIconTest {
                         .isNotBlank()
                         .containsOnlyOnce("<svg ")
                         .containsOnlyOnce("</svg>")
-                        .contains("<rect");
+                        .containsAnyOf("<rect", "<circle", "<polygon");
             }
         });
     }
@@ -417,14 +355,6 @@ class JazzIconTest {
     }
 
     @Test
-    void test_generateIconWithInitials_isValidSvg() {
-        var jazzIcon = new JazzIcon();
-        var svg = jazzIcon.generateIconWithInitials("Harry");
-        var valid = SvgUtil.isValidSvg(svg);
-        assertThat(valid).isTrue();
-    }
-
-    @Test
     void test_generateIcon_isSecureSvg() {
         Assertions.assertDoesNotThrow(() -> {
             var svg = new JazzIcon().generateIcon("Harry");
@@ -439,15 +369,6 @@ class JazzIconTest {
             jazzIcon.addSvgClass("show");
             jazzIcon.addSvgStyle("padding: 0;");
             var svg = jazzIcon.generateIcon("Harry");
-            SvgUtil.checkSvgSecureFromXSS(svg);
-        });
-    }
-
-    @Test
-    void test_generateIconWithInitials_isSecureSvg() {
-        Assertions.assertDoesNotThrow(() -> {
-            var jazzIcon = new JazzIcon();
-            var svg = jazzIcon.generateIconWithInitials("Harry");
             SvgUtil.checkSvgSecureFromXSS(svg);
         });
     }

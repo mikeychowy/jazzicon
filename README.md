@@ -183,6 +183,7 @@ public static void main(String[] args) {
 
 ```java
 import io.github.mikeychowy.jazzicon.ColorPalettes;
+import io.github.mikeychowy.jazzicon.InitialUtils;
 import io.github.mikeychowy.jazzicon.JazzIcon;
 
 @SuppressWarnings("UnnecessaryModifier")
@@ -192,21 +193,21 @@ public static void main(String[] args) {
   // generate to string and use directly
   // this will generate the icon with the initials of the name on top of the icon
   // (in this particular case, "H")
-  String svg = jazzIcon.generateIconWithInitials("Harry");
+  String svg = InitialUtils.generateIconWithInitials(jazzIcon, "Harry");
 
-  // give classes and/or styles directly to the initials
+  // give classes and/or styles directly to the initial element
   String svgWithInitialClassesAndStyles =
-      jazzIcon.generateIconWithInitials("Harry", List.of("text-white"), List.of("padding:0;"));
+      InitialUtils.generateIconWithInitials(jazzIcon, "Harry", List.of("text-white"), List.of("padding:0;"));
 
   // generate to an output stream
   try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
-    jazzIcon.generateIconWithInitialsToStream("Harry", outputStream);
+    InitialUtils.generateIconWithInitialsToStream(jazzIcon, "Harry", outputStream);
     String streamSvg = outputStream.toString(StandardCharsets.UTF_8);
   }
 
   // generate to a writer
   try (StringWriter osw = new StringWriter()) {
-    jazzIcon.generateIconWithInitialsToWriter("Harry", osw);
+    InitialUtils.generateIconWithInitialsToWriter(jazzIcon, "Harry", osw);
     String writerSvg = osw.toString();
   }
 }
@@ -271,10 +272,47 @@ I just like JazzIcon and want to port it into Java
 
 ## Color Palettes Examples
 
-### JAZZ_ICON default colors
+### JAZZ_ICON (default colors)
 
-![JAZZ_ICON_example_image](./examples/JAZZ_ICON.png)
+![JAZZ_ICON_example_image](./examples/pictures/JAZZ_ICON.png)
 
-### CHART colors
+### CHART_COLORS
 
-![CHART_example_image](./examples/CHART.png)
+![CHART_example_image](./examples/pictures/CHART.png)
+
+### PANTONE_COLORS
+
+![PANTONE_example_image](./examples/pictures/PANTONE.png)
+
+### MULBERRY_WHISPER
+
+![MULBERRY_WHISPER_example_image](./examples/pictures/MULBERRY.png)
+
+### CORAL_DREAM
+
+![CORAL_DREAM_example_image](./examples/pictures/CORAL.png)
+
+### WHIMSICAL_BLOSSOM
+
+![WHIMSICAL_BLOSSOM_example_image](./examples/pictures/BLOSSOM.png)
+
+### CATPUCCIN_LATTE
+
+![CATPUCCIN_LATTE_example_image](./examples/pictures/LATTE.png)
+
+### CATPUCCIN_FRAPPE
+
+![CATPUCCIN_FRAPPE_example_image](./examples/pictures/FRAPPE.png)
+
+### CATPUCCIN_MACCHIATO
+
+![CATPUCCIN_MACCHIATO_example_image](./examples/pictures/MACCHIATO.png)
+
+### CATPUCCIN_MOCHA
+
+![CATPUCCIN_MOCHA_example_image](./examples/pictures/MOCHA.png)
+
+### TAILWIND
+
+![TAILWIND_example_image](./examples/pictures/TAILWIND.png)
+

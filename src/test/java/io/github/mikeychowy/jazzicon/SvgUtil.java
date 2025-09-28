@@ -23,25 +23,27 @@ public final class SvgUtil {
 
     private static final String EXAMPLE_HTML_TEMPLATE =
             """
-            <!DOCTYPE html>
-            <html class="base" lang="en">
-            <head>
-              <meta charset="UTF-8"/>
-              <meta
-                  content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=yes"
-                  name="viewport"
-              />
-              <title>JazzIcon Examples</title>
-              <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-            </head>
-            <body>
-            <div class="rounded-full size-24 hidden"></div>
-            <div class="grid grid-cols-4 gap-x-0 gap-y-4 justify-items-center-safe justify-center-safe mt-5">
-              %s
-            </div>
-            </body>
-            </html>
-            """;
+                    <!DOCTYPE html>
+                    <html class="base" lang="en">
+                    <head>
+                      <meta charset="UTF-8"/>
+                      <meta
+                          content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=yes"
+                          name="viewport"
+                      />
+                      <title>JazzIcon Examples</title>
+                      <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+                    </head>
+                    <body>
+                    <div class="rounded-full size-24 hidden"></div>
+                    <div>
+                        <div class="grid grid-cols-4 gap-x-0 gap-y-4 justify-items-center-safe justify-center-safe justify-self-center-safe mt-5 lg:max-w-md mx-auto">
+                          %s
+                        </div>
+                    </div>
+                    </body>
+                    </html>
+                    """;
 
     private static final Logger log = LoggerFactory.getLogger(SvgUtil.class);
 

@@ -51,9 +51,6 @@ public class JazzIcon {
     /** The icon generation error message */
     private static final String ICON_GENERATION_ERROR_MESSAGE = "error while generating icon";
 
-    /** The icon with initials generation error message */
-    private static final String ICON_WITH_INITIALS_GENERATION_ERROR_MESSAGE =
-            ICON_GENERATION_ERROR_MESSAGE + " with initials";
     /** The logger */
     private static final Logger log = LoggerFactory.getLogger(JazzIcon.class);
     /** Lock to make sure operations are thread-safe */
@@ -447,6 +444,79 @@ public class JazzIcon {
     }
 
     /**
+     * Generate the actual shape after randomly picking which of the 3 shapes will be generated this round. <br>
+     * <br>
+     * For each of the shape type, further randomize each of its values
+     *
+     * @param index the current index of the shape count to be generated, for extra randomness in transforms
+     * @param shapeType the randomly picked shape type, either of rectangle, circle, or polygon
+     * @param mutableRotatedColors the list of colors that has been rotated according to the hueShift
+     * @param out {@link Writer} to append shapes into.
+     * @throws IOException if anything goes wrong when generating the shapes.
+     */
+    protected void createShape(
+            int index, @NonNull ShapeType shapeType, @NonNull List<String> mutableRotatedColors, @NonNull Writer out)
+            throws IOException {
+        log.debug("creating shape number: {},  picked shape: {}", index, shapeType);
+        if (ShapeType.CIRCLE.equals(shapeType)) {
+            log.debug("creating shape circle, appending head");
+            log.debug("creating shape circle, creating cx");
+            out.append("<circle cx=\"");
+            out.append(String.valueOf(randomGenerator.nextInt(101)));
+            out.append("\" ");
+
+            log.debug("creating shape circle, creating cy");
+            out.append("cy=\"");
+            out.append(String.valueOf(randomGenerator.nextInt(101)));
+            out.append("\" ");
+
+            log.debug("creating shape circle, creating r, picking integers inclusive of 20 ~ 55");
+            out.append("r=\"");
+            out.append(String.valueOf(randomGenerator.nextInt(34) + 20));
+        } else if (ShapeType.POLYGON.equals(shapeType)) {
+            log.debug("creating shape polygon, appending head");
+            log.debug("creating shape polygon, creating points");
+            out.append("<polygon points=\"");
+            // first point
+            log.debug("creating shape polygon, creating first point");
+            out.append(String.valueOf(randomGenerator.nextInt(101)));
+            out.append(",");
+            // first coordinates
+            log.debug("creating shape polygon, creating first coordinates");
+            out.append(String.valueOf(randomGenerator.nextInt(101)));
+            out.append(" ");
+            out.append(String.valueOf(randomGenerator.nextInt(101)));
+            out.append(",");
+            // second coordinates
+            log.debug("creating shape polygon, creating second coordinates");
+            out.append(String.valueOf(randomGenerator.nextInt(101)));
+            out.append(" ");
+            out.append(String.valueOf(randomGenerator.nextInt(101)));
+            out.append(",");
+            // third coordinates
+            log.debug("creating shape polygon, creating third coordinates");
+            out.append(String.valueOf(randomGenerator.nextInt(101)));
+            out.append(" ");
+            out.append(String.valueOf(randomGenerator.nextInt(101)));
+            out.append(",");
+            // second point
+            log.debug("creating shape polygon, creating second point");
+            out.append(String.valueOf(randomGenerator.nextInt(101)));
+        } else {
+            log.debug("creating shape rect");
+            out.append("<rect x=\"0\" y=\"0\" width=\"100%\" height=\"100%");
+        }
+
+        log.debug("generating transform");
+        out.append("\" transform=\"");
+        nextTransform(index, out);
+        log.debug("generating random color");
+        out.append("\" fill=\"");
+        nextColor(mutableRotatedColors, out);
+        out.append("\" />");
+    }
+
+    /**
      * Generate the shapes {@code shapeCount} times and write them into the supplied {@link Writer}. <br>
      * For now, only generate rectangles of randomized colors and positions.
      *
@@ -469,12 +539,8 @@ public class JazzIcon {
 
             log.debug("creating {} shapes", shapeCount);
             for (int i = 0; i < shapeCount; i++) {
-                log.debug("creating shape number {}", i);
-                out.append("<rect x=\"0\" y=\"0\" width=\"100%\" height=\"100%\" transform=\"");
-                nextTransform(i, out);
-                out.append("\" fill=\"");
-                nextColor(mutableRotatedColors, out);
-                out.append("\" />");
+                ShapeType shapeType = ShapeType.vals[randomGenerator.nextInt(ShapeType.vals.length)];
+                createShape(i, shapeType, mutableRotatedColors, out);
             }
         } finally {
             lock.unlock();
@@ -695,143 +761,6 @@ public class JazzIcon {
     }
 
     /**
-     * Generate the JazzIcon to a {@link Writer} with initials of the supplied name on top of the colorful icon.
-     *
-     * @param name the name for the icon with initials on top to be generated of
-     * @param out the {@link Writer} to be appended into
-     * @param initialClasses the classes to be inserted to the initial
-     * @param initialStyles the styles to be inserted to the initial
-     * @throws JazzIconGenerationException if anything goes wrong when generating the icon.
-     */
-    public void generateIconWithInitialsToWriter(
-            @NonNull String name,
-            @NonNull Writer out,
-            @NonNull List<String> initialClasses,
-            @NonNull List<String> initialStyles) {
-        try {
-            lock.lock();
-            Exceptions.wrap(e -> new JazzIconGenerationException(ICON_WITH_INITIALS_GENERATION_ERROR_MESSAGE, e))
-                    .run(() -> {
-                        var initials = NameUtils.getInitials(name);
-                        generateIconToWriter(
-                                name,
-                                out,
-                                Exceptions.wrap(e -> new JazzIconGenerationException(
-                                                "error while generating icon with initials", e))
-                                        .consumer(w -> {
-                                            w.append("<text ");
-                                            if (!initialClasses.isEmpty()) {
-                                                w.append("class=\"");
-                                                w.append(String.join(" ", initialClasses));
-                                                w.append("\" ");
-                                            }
-                                            if (!initialStyles.isEmpty()) {
-                                                w.append("style=\"");
-                                                w.append(String.join(" ", initialStyles));
-                                                w.append("\" ");
-                                            }
-                                            w.append(
-                                                    "x=\"50%\" y=\"50%\" text-anchor=\"middle\" dominant-baseline=\"middle\" class=\"fill-white font-bold text-[30px] font-sans\">");
-                                            w.append(initials);
-                                            w.append("</text>");
-                                        }));
-                    });
-        } finally {
-            lock.unlock();
-        }
-    }
-
-    /**
-     * Generate the JazzIcon to a {@link Writer} with initials of the supplied name on top of the colorful icon. This is
-     * a convenience method when you have no classes or styles to be inserted to the initial's element
-     *
-     * @param name the name for the icon with initials on top to be generated of
-     * @param out the {@link Writer} to be appended into
-     * @throws JazzIconGenerationException if anything goes wrong when generating the icon.
-     */
-    public void generateIconWithInitialsToWriter(@NonNull String name, @NonNull Writer out) {
-        generateIconWithInitialsToWriter(name, out, List.of(), List.of());
-    }
-
-    /**
-     * Generate the JazzIcon to an {@link OutputStream} with initials of the supplied name on top of the colorful icon.
-     *
-     * @param name the name for the icon with initials on top to be generated of
-     * @param outputStream the {@link OutputStream} to be appended into
-     * @param initialClasses the classes to be inserted to the initial
-     * @param initialStyles the styles to be inserted to the initial
-     * @throws JazzIconGenerationException if anything goes wrong when generating the icon.
-     */
-    public void generateIconWithInitialsToStream(
-            @NonNull String name,
-            @NonNull OutputStream outputStream,
-            @NonNull List<String> initialClasses,
-            @NonNull List<String> initialStyles) {
-        try {
-            lock.lock();
-            Exceptions.wrap(e -> new JazzIconGenerationException(ICON_WITH_INITIALS_GENERATION_ERROR_MESSAGE, e))
-                    .run(() -> {
-                        try (OutputStreamWriter osw = new OutputStreamWriter(outputStream, StandardCharsets.UTF_8)) {
-                            generateIconWithInitialsToWriter(name, osw, initialClasses, initialStyles);
-                            osw.flush();
-                        }
-                    });
-        } finally {
-            lock.unlock();
-        }
-    }
-
-    /**
-     * Generate the JazzIcon to an {@link OutputStream} with initials of the supplied name on top of the colorful icon.
-     * This is a convenience method when you have no classes or styles to be inserted to the initial's element
-     *
-     * @param name the name for the icon with initials on top to be generated of
-     * @param outputStream the {@link OutputStream} to be appended into
-     * @throws JazzIconGenerationException if anything goes wrong when generating the icon.
-     */
-    public void generateIconWithInitialsToStream(@NonNull String name, @NonNull OutputStream outputStream) {
-        generateIconWithInitialsToStream(name, outputStream, List.of(), List.of());
-    }
-
-    /**
-     * Generate the JazzIcon with initials of the supplied name on top of the colorful icon.
-     *
-     * @param name the name for the icon with initials on top to be generated of
-     * @param initialClasses the classes to be inserted to the initial
-     * @param initialStyles the styles to be inserted to the initial
-     * @return the generated icon with initials of the name on top
-     * @throws JazzIconGenerationException if anything goes wrong when generating the icon.
-     */
-    public String generateIconWithInitials(
-            @NonNull String name, @NonNull List<String> initialClasses, @NonNull List<String> initialStyles)
-            throws JazzIconGenerationException {
-        try {
-            lock.lock();
-            return Exceptions.wrap(e -> new JazzIconGenerationException(ICON_WITH_INITIALS_GENERATION_ERROR_MESSAGE, e))
-                    .get(() -> {
-                        try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
-                            generateIconWithInitialsToStream(name, outputStream, initialClasses, initialStyles);
-                            return outputStream.toString(StandardCharsets.UTF_8);
-                        }
-                    });
-        } finally {
-            lock.unlock();
-        }
-    }
-
-    /**
-     * Generate the JazzIcon with initials of the supplied name on top of the colorful icon. <br>
-     * This is a convenience method when you have no classes or styles to be inserted to the initial's element
-     *
-     * @param name the name for the icon with initials on top to be generated of
-     * @return the generated icon with initials of the name on top
-     * @throws JazzIconGenerationException if anything goes wrong when generating the icon.
-     */
-    public String generateIconWithInitials(@NonNull String name) throws JazzIconGenerationException {
-        return generateIconWithInitials(name, List.of(), List.of());
-    }
-
-    /**
      * The shape count to be generated in the icon
      *
      * @return the shape count to be generated in the icon
@@ -1048,6 +977,14 @@ public class JazzIcon {
         } finally {
             lock.unlock();
         }
+    }
+
+    protected enum ShapeType {
+        RECTANGLE,
+        CIRCLE,
+        POLYGON,
+        ;
+        protected static final ShapeType[] vals = values();
     }
 
     /** Convenience Builder Style helper for JazzIcon class creation */
