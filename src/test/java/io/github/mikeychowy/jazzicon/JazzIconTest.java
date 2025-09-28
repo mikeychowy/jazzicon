@@ -1,5 +1,14 @@
 package io.github.mikeychowy.jazzicon;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNoException;
+import static org.assertj.core.api.Assertions.catchThrowable;
+import static org.assertj.core.api.Assertions.catchThrowableOfType;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.StringWriter;
@@ -16,17 +25,9 @@ import java.util.function.Consumer;
 import org.assertj.core.api.ThrowableAssert;
 import org.hipparchus.random.RandomGenerator;
 import org.hipparchus.random.Well1024a;
+import org.hipparchus.random.Well512a;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatNoException;
-import static org.assertj.core.api.Assertions.catchThrowable;
-import static org.assertj.core.api.Assertions.catchThrowableOfType;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 class JazzIconTest {
 
@@ -48,7 +49,7 @@ class JazzIconTest {
         assertThat(jazzIcon.getAllowedCharactersForPaddingText())
                 .isNotBlank()
                 .isEqualTo(JazzIcon.DEFAULT_ALLOWED_CHARACTERS);
-        assertThat(jazzIcon.getRandomGenerator()).isNotNull().isEqualTo(JazzIcon.DEFAULT_RANDOM_GENERATOR);
+        assertThat(jazzIcon.getRandomGenerator().getClass()).isNotNull().isEqualTo(Well512a.class);
         assertThat(jazzIcon.getShapeCount()).isEqualTo(JazzIcon.DEFAULT_SHAPE_COUNT);
         assertThat(jazzIcon.getWobble()).isEqualTo(JazzIcon.DEFAULT_WOBBLE);
 
@@ -132,11 +133,10 @@ class JazzIconTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("must be higher than shapeCount");
 
-        ex = catchThrowableOfType(
-                IllegalArgumentException.class, setupJazzIconThrowingCondition(jazzIcon -> {
-                    jazzIcon.setShapeCount(9);
-                    jazzIcon.setBaseColors(ColorPalettes.SECTION_1);
-                }));
+        ex = catchThrowableOfType(IllegalArgumentException.class, setupJazzIconThrowingCondition(jazzIcon -> {
+            jazzIcon.setShapeCount(9);
+            jazzIcon.setBaseColors(ColorPalettes.SECTION_1);
+        }));
         assertThat(ex)
                 .isNotNull()
                 .isInstanceOf(IllegalArgumentException.class)
@@ -286,16 +286,15 @@ class JazzIconTest {
     void test_generateIcon_whenBodyInterceptorIsNotEmpty_bodyOperationSuccess() {
         var jazzIcon = new JazzIcon();
 
-        var result = jazzIcon.generateIcon(
-                "Harry", writer -> {
-                    try {
-                        writer.write(MessageFormat.format(
-                                "<text x=\"50%\" y=\"50%\" text-anchor=\"middle\" dominant-baseline=\"middle\" class=\"fill-white font-bold text-[30px] font-sans\">{0}</text>",
-                                NameUtils.getInitials("Harry")));
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
-                    }
-                });
+        var result = jazzIcon.generateIcon("Harry", writer -> {
+            try {
+                writer.write(MessageFormat.format(
+                        "<text x=\"50%\" y=\"50%\" text-anchor=\"middle\" dominant-baseline=\"middle\" class=\"fill-white font-bold text-[30px] font-sans\">{0}</text>",
+                        NameUtils.getInitials("Harry")));
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
         assertThat(result)
                 .isNotNull()
                 .isNotBlank()
@@ -319,6 +318,37 @@ class JazzIconTest {
                 .contains("<rect")
                 .contains(
                         "<text x=\"50%\" y=\"50%\" text-anchor=\"middle\" dominant-baseline=\"middle\" class=\"fill-white font-bold text-[30px] font-sans\">H</text>");
+    }
+
+    @Test
+    void test_generateIconWithInitials_convenienceMethods_success() throws IOException {
+        var jazzIcon = new JazzIcon();
+
+        try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+            jazzIcon.generateIconWithInitialsToStream("Harry", outputStream);
+            var result = outputStream.toString(StandardCharsets.UTF_8);
+            assertThat(result)
+                    .isNotNull()
+                    .isNotBlank()
+                    .containsOnlyOnce("<svg ")
+                    .containsOnlyOnce("</svg>")
+                    .contains("<rect")
+                    .contains(
+                            "<text x=\"50%\" y=\"50%\" text-anchor=\"middle\" dominant-baseline=\"middle\" class=\"fill-white font-bold text-[30px] font-sans\">H</text>");
+        }
+
+        try (StringWriter writer = new StringWriter()) {
+            jazzIcon.generateIconWithInitialsToWriter("Harry", writer);
+            var result = writer.toString();
+            assertThat(result)
+                    .isNotNull()
+                    .isNotBlank()
+                    .containsOnlyOnce("<svg ")
+                    .containsOnlyOnce("</svg>")
+                    .contains("<rect")
+                    .contains(
+                            "<text x=\"50%\" y=\"50%\" text-anchor=\"middle\" dominant-baseline=\"middle\" class=\"fill-white font-bold text-[30px] font-sans\">H</text>");
+        }
     }
 
     @Test
@@ -379,8 +409,8 @@ class JazzIconTest {
     @Test
     void test_generateIconWithClassesAndStyles_isValidSvg() {
         var jazzIcon = new JazzIcon();
-        jazzIcon.addSvgClass("show");
-        jazzIcon.addSvgStyle("padding: 0;");
+        jazzIcon.addSvgClasses("show", "px-5");
+        jazzIcon.addSvgStyles("padding: 0;", "margin: 0;");
         var svg = jazzIcon.generateIcon("Harry");
         var valid = SvgUtil.isValidSvg(svg);
         assertThat(valid).isTrue();
@@ -435,5 +465,46 @@ class JazzIconTest {
         assertThat(harrySvg.get()).isNotBlank();
         assertThat(lindaSvg.get()).isNotBlank();
         assertThat(harrySvg.get()).isNotEqualToIgnoringCase(lindaSvg.get());
+    }
+
+    @Test
+    void test_equals() {
+        assertThat(new JazzIcon()).isEqualTo(new JazzIcon());
+        assertThat(new JazzIcon()).isNotEqualTo(null);
+        assertThat(new JazzIcon()).isNotEqualTo(new String[] {});
+
+        var jazzIcon = new JazzIcon()
+                .setWobble(50)
+                .setShapeCount(5)
+                .setBaseColors(ColorPalettes.TAILWIND)
+                .setRandomGenerator(new Well1024a());
+        var thatJazzIcon = new JazzIcon()
+                .setWobble(50)
+                .setShapeCount(5)
+                .setBaseColors(ColorPalettes.TAILWIND)
+                .setRandomGenerator(new Well1024a());
+        assertThat(jazzIcon).isEqualTo(thatJazzIcon);
+        thatJazzIcon.setRandomGenerator(new Well512a());
+        assertThat(jazzIcon).isNotEqualTo(thatJazzIcon);
+        thatJazzIcon.setBaseColors(ColorPalettes.CATPUCCIN_FRAPPE);
+        assertThat(jazzIcon).isNotEqualTo(thatJazzIcon);
+        thatJazzIcon.setWobble(10);
+        assertThat(jazzIcon).isNotEqualTo(thatJazzIcon);
+        thatJazzIcon.setShapeCount(1);
+        assertThat(jazzIcon).isNotEqualTo(thatJazzIcon);
+
+        thatJazzIcon
+                .setWobble(50)
+                .setShapeCount(5)
+                .setBaseColors(ColorPalettes.TAILWIND)
+                .setRandomGenerator(new Well1024a());
+    }
+
+    @Test
+    void test_hashCode() {
+        var jazzIcon = new JazzIcon();
+        var hc1 = jazzIcon.hashCode();
+        var hc2 = jazzIcon.hashCode();
+        assertThat(hc1).isEqualTo(hc2);
     }
 }

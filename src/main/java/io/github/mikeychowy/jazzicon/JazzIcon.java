@@ -10,7 +10,6 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
-import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
@@ -36,98 +35,59 @@ import org.slf4j.LoggerFactory;
  */
 @SuppressWarnings({"unused", "UnusedReturnValue"})
 public class JazzIcon {
-    /**
-     * Default random generator
-     */
-    public static final RandomGenerator DEFAULT_RANDOM_GENERATOR = new Well512a();
-    /**
-     * Default count of shapes to be generated
-     */
+    /** Default count of shapes to be generated */
     public static final int DEFAULT_SHAPE_COUNT = 4;
-    /**
-     * Default wobble for randomness purpose when shifting colors
-     */
+    /** Default wobble for randomness purpose when shifting colors */
     public static final int DEFAULT_WOBBLE = 30;
-    /**
-     * Default theme of the icon
-     */
+    /** Default theme of the icon */
     public static final ColorPalettes DEFAULT_BASE_COLORS = ColorPalettes.JAZZ_ICON;
-    /**
-     * Default allow list for padding in case supplied seed text's length is lesser than 3
-     */
+    /** Default allow list for padding in case supplied seed text's length is lesser than 3 */
     public static final String DEFAULT_ALLOWED_CHARACTERS =
             "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-    /**
-     * Secure Random for random picking of the allow list padding
-     */
-    protected static final SecureRandom SECURE_RANDOM = new SecureRandom();
-    /**
-     * String format pattern to take only 3 points of a decimal: 2.5483 -> 2.548
-     */
+    /** String format pattern to take only 3 points of a decimal: 2.5483 -> 2.548 */
     protected static final String THREE_POINTS_DECIMAL_FORMAT = "%.3f";
-    /**
-     * String format pattern to take only 1 point of a decimal: 2.13 -> 2.1
-     */
+    /** String format pattern to take only 1 point of a decimal: 2.13 -> 2.1 */
     protected static final String ONE_POINT_DECIMAL_FORMAT = "%.1f";
-    /**
-     * The logger
-     */
+    /** The icon generation error message */
+    private static final String ICON_GENERATION_ERROR_MESSAGE = "error while generating icon";
+
+    /** The icon with initials generation error message */
+    private static final String ICON_WITH_INITIALS_GENERATION_ERROR_MESSAGE =
+            ICON_GENERATION_ERROR_MESSAGE + " with initials";
+    /** The logger */
     private static final Logger log = LoggerFactory.getLogger(JazzIcon.class);
-    /**
-     * Lock to make sure operations are thread-safe
-     */
+    /** Lock to make sure operations are thread-safe */
     protected final ReentrantLock lock = new ReentrantLock(true);
-    /**
-     * List of classes which will be inserted into "class" attribute of the generated svg
-     */
+    /** List of classes which will be inserted into "class" attribute of the generated svg */
     protected final List<String> svgClasses = new ArrayList<>();
-    /**
-     * List of styles which will be inserted into "style" attribute of the generated svg
-     */
+    /** List of styles which will be inserted into "style" attribute of the generated svg */
     protected final List<String> svgStyles = new ArrayList<>();
-    /**
-     * the count of the shapes to be generated, MUST be > 0
-     */
+    /** the count of the shapes to be generated, MUST be > 0 */
     protected int shapeCount;
-    /**
-     * the wobble used for color rotating into hue shift, randomness purpose, MUST be > 0
-     */
+    /** the wobble used for color rotating into hue shift, randomness purpose, MUST be > 0 */
     protected int wobble;
-    /**
-     * the {@link ColorPalettes} to be used for the theme of the icon
-     */
+    /** the {@link ColorPalettes} to be used for the theme of the icon */
     protected ColorPalettes baseColors;
-    /**
-     * allow list for characters to be randomly picked during seed text padding
-     */
+    /** allow list for characters to be randomly picked during seed text padding */
     protected String allowedCharactersForPaddingText;
-    /**
-     * the {@link RandomGenerator} to be used to generate random values for JazzIcon calculation.
-     */
+    /** the {@link RandomGenerator} to be used to generate random values for JazzIcon calculation. */
     protected RandomGenerator randomGenerator;
 
-    /**
-     * Default constructor using all default values. For the less adventurous of us.
-     */
+    /** Default constructor using all default values. For the less adventurous of us. */
     public JazzIcon() {
-        this(
-                DEFAULT_SHAPE_COUNT,
-                DEFAULT_WOBBLE,
-                DEFAULT_BASE_COLORS,
-                DEFAULT_ALLOWED_CHARACTERS,
-                DEFAULT_RANDOM_GENERATOR);
+        this(DEFAULT_SHAPE_COUNT, DEFAULT_WOBBLE, DEFAULT_BASE_COLORS, DEFAULT_ALLOWED_CHARACTERS, new Well512a());
     }
 
     /**
      * The real constructor of JazzIcon generator, control all the parameters yourself.
      *
-     * @param shapeCount                      the count of the shapes to be generated, MUST be > 0
-     * @param wobble                          the wobble used for color rotating into hue shift, randomness purpose, MUST be > 0
-     * @param baseColors                      the {@link ColorPalettes} to be used for the theme of the icon
+     * @param shapeCount the count of the shapes to be generated, MUST be > 0
+     * @param wobble the wobble used for color rotating into hue shift, randomness purpose, MUST be > 0
+     * @param baseColors the {@link ColorPalettes} to be used for the theme of the icon
      * @param allowedCharactersForPaddingText allow list for characters to be randomly picked during seed text padding
-     *                                        (when supplied seed text's length is lesser or equals 3)
-     * @param randomGenerator                 the {@link RandomGenerator} to be used to generate random values for JazzIcon calculation.
-     *                                        MersenneTwister is not recommended by all the math papers, so I used Well as a default
+     *     (when supplied seed text's length is lesser or equals 3)
+     * @param randomGenerator the {@link RandomGenerator} to be used to generate random values for JazzIcon calculation.
+     *     {@link Well512a} is the default
      */
     public JazzIcon(
             int shapeCount,
@@ -171,7 +131,7 @@ public class JazzIcon {
      *
      * @param hexColor the original hex of the color to be rotated
      * @param hueShift the hueShift for the color on the color wheel, default logic for this is {@code (30 *
-     *                 randomlyGeneratedPosition) - (wobble / 2.0F)}
+     *     randomlyGeneratedPosition) - (wobble / 2.0F)}
      * @return the rotated color hex
      */
     protected static String rotateColor(@NonNull String hexColor, double hueShift) {
@@ -209,7 +169,7 @@ public class JazzIcon {
      * Generate the next transformation of the svg shape, changes the shape's position and rotation.
      *
      * @param index the index of the shape for which the transform will be generated, extra randomness
-     * @param out   the {@link Writer} to append the transform into
+     * @param out the {@link Writer} to append the transform into
      * @throws IOException if anything goes wrong when appending the generated transform to the {@link Writer}.
      */
     protected void nextTransform(int index, @NonNull Writer out) throws IOException {
@@ -238,9 +198,9 @@ public class JazzIcon {
      * Randomly pick the next color to be used from the list of baseColors rotated using hueShift.
      *
      * @param rotatedColors the list of colors that has been rotated according to the hueShift, MUST BE MUTABLE, WILL
-     *                      REMOVE THE PICKED COLOR FROM THE LIST, IF YOU HAVE AN IMMUTABLE LIST, COPY THE VALUES FROM IT USING
-     *                      {@code new ArrayList()}
-     * @param out           the {@link Writer} to append the picked color into
+     *     REMOVE THE PICKED COLOR FROM THE LIST, IF YOU HAVE AN IMMUTABLE LIST, COPY THE VALUES FROM IT USING
+     *     {@code new ArrayList()}
+     * @param out the {@link Writer} to append the picked color into
      * @throws IOException if anything goes wrong when appending the randomly picked color to the {@link Writer}.
      */
     protected void nextColor(@NonNull List<String> rotatedColors, @NonNull Writer out) throws IOException {
@@ -491,7 +451,7 @@ public class JazzIcon {
      * For now, only generate rectangles of randomized colors and positions.
      *
      * @param rotatedColors the list of colors that has been rotated according to the hueShift
-     * @param out           {@link Writer} to append shapes into.
+     * @param out {@link Writer} to append shapes into.
      * @throws IOException if anything goes wrong when generating the shapes.
      */
     protected void createShapes(@NonNull List<String> rotatedColors, @NonNull Writer out) throws IOException {
@@ -534,7 +494,7 @@ public class JazzIcon {
             StringBuilder sb = new StringBuilder(length);
             int n = allowedCharactersForPaddingText.length();
             for (int i = 0; i < length; i++) {
-                int idx = SECURE_RANDOM.nextInt(n);
+                int idx = randomGenerator.nextInt(n);
                 sb.append(allowedCharactersForPaddingText.charAt(idx));
             }
             return sb.toString();
@@ -572,10 +532,13 @@ public class JazzIcon {
     /**
      * Generate a JazzIcon to a {@link Writer}, with an optional body interceptor
      *
-     * @param text               the text to be the seed of the icon
-     * @param out                a {@link Writer} to write the icon into
+     * @param text the text to be the seed of the icon
+     * @param out a {@link Writer} to write the icon into
      * @param svgBodyInterceptor optional body interceptor, in case you want to insert your own elements to the middle
-     *                           of the icon body, or anything else to do. Optional, you can pass null
+     *     of the icon body, or anything else to do. Optional, you can pass null. <br>
+     *     <br>
+     *     <strong><u>DISCLAIMER: ANYTHING YOU DO IN THE CONSUMER TO THE SVG IS NOT GUARANTEED TO BE SAFE, I TAKE NO
+     *     RESPONSIBILITY FOR YOUR OPERATION(S)</u></strong>
      * @throws JazzIconGenerationException if anything goes wrong when generating the icon.
      */
     public void generateIconToWriter(
@@ -653,10 +616,13 @@ public class JazzIcon {
     /**
      * Generate a JazzIcon to an {@link OutputStream}, with an optional body interceptor
      *
-     * @param text               the text to be the seed of the icon
-     * @param outputStream       the {@link OutputStream} to write the icon into
+     * @param text the text to be the seed of the icon
+     * @param outputStream the {@link OutputStream} to write the icon into
      * @param svgBodyInterceptor optional body interceptor, in case you want to insert your own elements to the middle
-     *                           of the icon body, or anything else to do. Optional, you can pass null
+     *     of the icon body, or anything else to do. Optional, you can pass null. <br>
+     *     <br>
+     *     <strong><u>DISCLAIMER: ANYTHING YOU DO IN THE CONSUMER TO THE SVG IS NOT GUARANTEED TO BE SAFE, I TAKE NO
+     *     RESPONSIBILITY FOR YOUR OPERATION(S)</u></strong>
      * @throws JazzIconGenerationException if anything goes wrong when generating the icon.
      */
     public void generateIconToStream(
@@ -680,7 +646,7 @@ public class JazzIcon {
     /**
      * Generate a JazzIcon to an {@link OutputStream}
      *
-     * @param text         the text to be the seed of the icon
+     * @param text the text to be the seed of the icon
      * @param outputStream the {@link OutputStream} to write the icon into
      * @throws JazzIconGenerationException if anything goes wrong when generating the icon.
      */
@@ -692,9 +658,12 @@ public class JazzIcon {
     /**
      * Generate a JazzIcon directly to a String, with an optional body interceptor
      *
-     * @param text               the text to be the seed of the icon
+     * @param text the text to be the seed of the icon
      * @param svgBodyInterceptor optional body interceptor, in case you want to insert your own elements to the middle
-     *                           of the icon body, or anything else to do. Optional, you can pass null
+     *     of the icon body, or anything else to do. Optional, you can pass null. <br>
+     *     <br>
+     *     <strong><u>DISCLAIMER: ANYTHING YOU DO IN THE CONSUMER TO THE SVG IS NOT GUARANTEED TO BE SAFE, I TAKE NO
+     *     RESPONSIBILITY FOR YOUR OPERATION(S)</u></strong>
      * @return the SVG string of the JazzIcon
      * @throws JazzIconGenerationException if anything goes wrong when generating the icon.
      */
@@ -702,7 +671,7 @@ public class JazzIcon {
             throws JazzIconGenerationException {
         try {
             lock.lock();
-            return Exceptions.wrap(e -> new JazzIconGenerationException("error while generating icon", e))
+            return Exceptions.wrap(e -> new JazzIconGenerationException(ICON_GENERATION_ERROR_MESSAGE, e))
                     .get(() -> {
                         try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
                             generateIconToStream(text, outputStream, svgBodyInterceptor);
@@ -726,11 +695,110 @@ public class JazzIcon {
     }
 
     /**
+     * Generate the JazzIcon to a {@link Writer} with initials of the supplied name on top of the colorful icon.
+     *
+     * @param name the name for the icon with initials on top to be generated of
+     * @param out the {@link Writer} to be appended into
+     * @param initialClasses the classes to be inserted to the initial
+     * @param initialStyles the styles to be inserted to the initial
+     * @throws JazzIconGenerationException if anything goes wrong when generating the icon.
+     */
+    public void generateIconWithInitialsToWriter(
+            @NonNull String name,
+            @NonNull Writer out,
+            @NonNull List<String> initialClasses,
+            @NonNull List<String> initialStyles) {
+        try {
+            lock.lock();
+            Exceptions.wrap(e -> new JazzIconGenerationException(ICON_WITH_INITIALS_GENERATION_ERROR_MESSAGE, e))
+                    .run(() -> {
+                        var initials = NameUtils.getInitials(name);
+                        generateIconToWriter(
+                                name,
+                                out,
+                                Exceptions.wrap(e -> new JazzIconGenerationException(
+                                                "error while generating icon with initials", e))
+                                        .consumer(w -> {
+                                            w.append("<text ");
+                                            if (!initialClasses.isEmpty()) {
+                                                w.append("class=\"");
+                                                w.append(String.join(" ", initialClasses));
+                                                w.append("\" ");
+                                            }
+                                            if (!initialStyles.isEmpty()) {
+                                                w.append("style=\"");
+                                                w.append(String.join(" ", initialStyles));
+                                                w.append("\" ");
+                                            }
+                                            w.append(
+                                                    "x=\"50%\" y=\"50%\" text-anchor=\"middle\" dominant-baseline=\"middle\" class=\"fill-white font-bold text-[30px] font-sans\">");
+                                            w.append(initials);
+                                            w.append("</text>");
+                                        }));
+                    });
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    /**
+     * Generate the JazzIcon to a {@link Writer} with initials of the supplied name on top of the colorful icon. This is
+     * a convenience method when you have no classes or styles to be inserted to the initial's element
+     *
+     * @param name the name for the icon with initials on top to be generated of
+     * @param out the {@link Writer} to be appended into
+     * @throws JazzIconGenerationException if anything goes wrong when generating the icon.
+     */
+    public void generateIconWithInitialsToWriter(@NonNull String name, @NonNull Writer out) {
+        generateIconWithInitialsToWriter(name, out, List.of(), List.of());
+    }
+
+    /**
+     * Generate the JazzIcon to an {@link OutputStream} with initials of the supplied name on top of the colorful icon.
+     *
+     * @param name the name for the icon with initials on top to be generated of
+     * @param outputStream the {@link OutputStream} to be appended into
+     * @param initialClasses the classes to be inserted to the initial
+     * @param initialStyles the styles to be inserted to the initial
+     * @throws JazzIconGenerationException if anything goes wrong when generating the icon.
+     */
+    public void generateIconWithInitialsToStream(
+            @NonNull String name,
+            @NonNull OutputStream outputStream,
+            @NonNull List<String> initialClasses,
+            @NonNull List<String> initialStyles) {
+        try {
+            lock.lock();
+            Exceptions.wrap(e -> new JazzIconGenerationException(ICON_WITH_INITIALS_GENERATION_ERROR_MESSAGE, e))
+                    .run(() -> {
+                        try (OutputStreamWriter osw = new OutputStreamWriter(outputStream, StandardCharsets.UTF_8)) {
+                            generateIconWithInitialsToWriter(name, osw, initialClasses, initialStyles);
+                            osw.flush();
+                        }
+                    });
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    /**
+     * Generate the JazzIcon to an {@link OutputStream} with initials of the supplied name on top of the colorful icon.
+     * This is a convenience method when you have no classes or styles to be inserted to the initial's element
+     *
+     * @param name the name for the icon with initials on top to be generated of
+     * @param outputStream the {@link OutputStream} to be appended into
+     * @throws JazzIconGenerationException if anything goes wrong when generating the icon.
+     */
+    public void generateIconWithInitialsToStream(@NonNull String name, @NonNull OutputStream outputStream) {
+        generateIconWithInitialsToStream(name, outputStream, List.of(), List.of());
+    }
+
+    /**
      * Generate the JazzIcon with initials of the supplied name on top of the colorful icon.
      *
-     * @param name           the name for the icon with initials on top to be generated of
+     * @param name the name for the icon with initials on top to be generated of
      * @param initialClasses the classes to be inserted to the initial
-     * @param initialStyles  the styles to be inserted to the initial
+     * @param initialStyles the styles to be inserted to the initial
      * @return the generated icon with initials of the name on top
      * @throws JazzIconGenerationException if anything goes wrong when generating the icon.
      */
@@ -739,32 +807,10 @@ public class JazzIcon {
             throws JazzIconGenerationException {
         try {
             lock.lock();
-            return Exceptions.wrap(e -> new JazzIconGenerationException("error while generating icon", e))
+            return Exceptions.wrap(e -> new JazzIconGenerationException(ICON_WITH_INITIALS_GENERATION_ERROR_MESSAGE, e))
                     .get(() -> {
                         try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
-                            var initials = NameUtils.getInitials(name);
-                            generateIconToStream(
-                                    name,
-                                    outputStream,
-                                    Exceptions.wrap(e -> new JazzIconGenerationException(
-                                                    "error while generating icon with initials", e))
-                                            .consumer(out -> {
-                                                out.append("<text ");
-                                                if (!initialClasses.isEmpty()) {
-                                                    out.append("class=\"");
-                                                    out.append(String.join(" ", initialClasses));
-                                                    out.append("\" ");
-                                                }
-                                                if (!initialStyles.isEmpty()) {
-                                                    out.append("style=\"");
-                                                    out.append(String.join(" ", initialStyles));
-                                                    out.append("\" ");
-                                                }
-                                                out.append(
-                                                        "x=\"50%\" y=\"50%\" text-anchor=\"middle\" dominant-baseline=\"middle\" class=\"fill-white font-bold text-[30px] font-sans\">");
-                                                out.append(initials);
-                                                out.append("</text>");
-                                            }));
+                            generateIconWithInitialsToStream(name, outputStream, initialClasses, initialStyles);
                             return outputStream.toString(StandardCharsets.UTF_8);
                         }
                     });
@@ -775,7 +821,7 @@ public class JazzIcon {
 
     /**
      * Generate the JazzIcon with initials of the supplied name on top of the colorful icon. <br>
-     * This is a convenience method when you have no classes or styles to be inserted to the initial element
+     * This is a convenience method when you have no classes or styles to be inserted to the initial's element
      *
      * @param name the name for the icon with initials on top to be generated of
      * @return the generated icon with initials of the name on top
@@ -806,7 +852,7 @@ public class JazzIcon {
      * @param shapeCount the new {@link ColorPalettes} shape count to be generated in the icon.
      * @return This class for fluent style API
      * @throws IllegalArgumentException if the supplied shapeCount param is lesser or equals 0 OR when the requested
-     *                                  {@code shapeCount + 1} is lower than the {@code baseColor}'s set size
+     *     {@code shapeCount + 1} is lower than the {@code baseColor}'s set size
      */
     public JazzIcon setShapeCount(int shapeCount) throws IllegalArgumentException {
         try {
@@ -865,8 +911,7 @@ public class JazzIcon {
      *
      * @return the {@link ColorPalettes} to be used by JazzIcon.
      */
-    @NonNull
-    public ColorPalettes getBaseColors() {
+    @NonNull public ColorPalettes getBaseColors() {
         try {
             lock.lock();
             return baseColors;
@@ -882,7 +927,7 @@ public class JazzIcon {
      * @param baseColors the new {@link ColorPalettes} to be used by JazzIcon
      * @return This class for fluent style API
      * @throws IllegalArgumentException if the supplied baseColors param is null OR when the requested {@code shapeCount
-     *                                  + 1} is lower than the {@code baseColor}'s set size
+     *     + 1} is lower than the {@code baseColor}'s set size
      */
     public JazzIcon setBaseColors(ColorPalettes baseColors) throws IllegalArgumentException {
         try {
@@ -906,8 +951,7 @@ public class JazzIcon {
      *
      * @return the characters allow list for padding seed text when seed text lesser or equals 3
      */
-    @NonNull
-    public String getAllowedCharactersForPaddingText() {
+    @NonNull public String getAllowedCharactersForPaddingText() {
         try {
             lock.lock();
             return allowedCharactersForPaddingText;
@@ -944,8 +988,7 @@ public class JazzIcon {
      *
      * @return the {@link RandomGenerator} used by JazzIcon
      */
-    @NonNull
-    public RandomGenerator getRandomGenerator() {
+    @NonNull public RandomGenerator getRandomGenerator() {
         try {
             lock.lock();
             return randomGenerator;
@@ -975,14 +1018,42 @@ public class JazzIcon {
         }
     }
 
-    /**
-     * Convenience Builder Style helper for JazzIcon class creation
-     */
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+
+        JazzIcon jazzIcon = (JazzIcon) o;
+        try {
+            lock.lock();
+            return shapeCount == jazzIcon.shapeCount
+                    && wobble == jazzIcon.wobble
+                    && baseColors.equals(jazzIcon.baseColors)
+                    && randomGenerator.getClass().equals(jazzIcon.randomGenerator.getClass());
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    @Override
+    public int hashCode() {
+        try {
+            lock.lock();
+            int result = shapeCount;
+            result = 31 * result + wobble;
+            result = 31 * result + baseColors.hashCode();
+            result = 31 * result + randomGenerator.getClass().hashCode();
+            return result;
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    /** Convenience Builder Style helper for JazzIcon class creation */
     @SuppressWarnings("ClassCanBeRecord")
     public static class JazzIconBuilder {
-        /**
-         * The immutable JazzIcon reference for the builder
-         */
+        /** The immutable JazzIcon reference for the builder */
         private final JazzIcon jazzIcon;
 
         /**
@@ -994,9 +1065,7 @@ public class JazzIcon {
             this.jazzIcon = jazzIcon;
         }
 
-        /**
-         * Use a default JazzIcon reference
-         */
+        /** Use a default JazzIcon reference */
         public JazzIconBuilder() {
             this(new JazzIcon());
         }
@@ -1039,7 +1108,7 @@ public class JazzIcon {
          * padding
          *
          * @param allowedCharacters allowedCharactersForPaddingText allow list for characters to be randomly picked
-         *                          during seed text padding (when supplied seed text's length is lesser or equals 3)
+         *     during seed text padding (when supplied seed text's length is lesser or equals 3)
          * @return the builder
          */
         public JazzIconBuilder withAllowedCharactersForPaddingText(String allowedCharacters) {
@@ -1051,7 +1120,7 @@ public class JazzIcon {
          * Change the {@link RandomGenerator} to be used to generate random values for JazzIcon calculation.
          *
          * @param randomGenerator the {@link RandomGenerator} to be used to generate random values for JazzIcon
-         *                        calculation.
+         *     calculation.
          * @return the builder
          */
         public JazzIconBuilder withRandomGenerator(RandomGenerator randomGenerator) {

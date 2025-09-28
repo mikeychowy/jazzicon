@@ -3,9 +3,7 @@ package io.github.mikeychowy.jazzicon;
 import java.util.regex.Pattern;
 import org.jspecify.annotations.Nullable;
 
-/**
- * Small utility class to handle anything regarding colors
- */
+/** Small utility class to handle anything regarding colors */
 public final class ColorUtils {
     private static final Pattern HEX_COLOR_PATTERN =
             Pattern.compile("^#?([A-Fa-f0-9]{3}|[A-Fa-f0-9]{4}|[A-Fa-f0-9]{6}|[A-Fa-f0-9]{8})$");

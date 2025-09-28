@@ -5,9 +5,7 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 import org.jspecify.annotations.Nullable;
 
-/**
- * Small utility class to handle anything regarding names
- */
+/** Small utility class to handle anything regarding names */
 public final class NameUtils {
     private NameUtils() {}
 
@@ -26,8 +24,8 @@ public final class NameUtils {
      *     - {@code ""} -> ?
      *     - {@code null} -> ?
      * </pre>
-     * <p>
-     * By the examples above, we can see that any names using dashes (-) or other such separator aren't taken into
+     *
+     * <p>By the examples above, we can see that any names using dashes (-) or other such separator aren't taken into
      * account for the resulting initial. <br>
      * Also, any names with a word separator indicating 'of' such as 'de' in Latin based names will be taken as the
      * initial as well.
