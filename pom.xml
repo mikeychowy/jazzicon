@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>io.github.mikeychowy.jazzicon</groupId>
   <artifactId>jazzicon</artifactId>
-  <version>1.0.0</version>
+  <version>1.0.1</version>
   <packaging>jar</packaging>
 
   <name>jazzicon</name>
@@ -39,7 +40,7 @@
     <colormath.version>3.6.1</colormath.version>
     <hipparchus.version>4.0.2</hipparchus.version>
 
-    <java.version>21</java.version>
+    <java.version>17</java.version>
     <maven.compiler.proc>full</maven.compiler.proc>
     <maven.compiler.source>${java.version}</maven.compiler.source>
     <maven.compiler.target>${java.version}</maven.compiler.target>
@@ -49,8 +50,8 @@
 
     <test.assertj.version>3.27.6</test.assertj.version>
     <test.junit.version>5.13.4</test.junit.version>
+    <test.logback.version>1.5.18</test.logback.version>
     <test.mockito.version>5.20.0</test.mockito.version>
-    <test.rainbowgum.version>0.8.2</test.rainbowgum.version>
   </properties>
 
   <dependencies>
@@ -84,6 +85,12 @@
       <artifactId>slf4j-api</artifactId>
       <version>2.0.17</version>
     </dependency>
+    <dependency>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-classic</artifactId>
+      <version>1.5.18</version>
+      <scope>test</scope>
+    </dependency>
 
     <!--  Test Dependencies    -->
     <dependency>
@@ -102,24 +109,6 @@
       <groupId>io.avaje</groupId>
       <artifactId>avaje-spi-service</artifactId>
       <version>2.9</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>io.jstach.rainbowgum</groupId>
-      <artifactId>rainbowgum-core</artifactId>
-      <version>${test.rainbowgum.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>io.jstach.rainbowgum</groupId>
-      <artifactId>rainbowgum-pattern</artifactId>
-      <version>${test.rainbowgum.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>io.jstach.rainbowgum</groupId>
-      <artifactId>rainbowgum-slf4j</artifactId>
-      <version>${test.rainbowgum.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -259,8 +248,8 @@
                 <include>.gitignore</include>
               </includes>
               <!-- define the steps to apply to those files -->
-              <trimTrailingWhitespace />
-              <endWithNewline />
+              <trimTrailingWhitespace/>
+              <endWithNewline/>
               <indent>
                 <tabs>true</tabs>
                 <spacesPerTab>4</spacesPerTab>
@@ -272,7 +261,7 @@
             <removeUnusedImports>
               <engine>cleanthat-javaparser-unnecessaryimport</engine>
             </removeUnusedImports>
-            <removeUnusedImports />
+            <removeUnusedImports/>
             <cleanthat>
               <version>2.24</version>
               <mutators>
@@ -295,7 +284,7 @@
               <formatJavadoc>true</formatJavadoc>
               <!-- defaults to false (optional, requires at least Palantir 2.39.0) -->
             </palantirJavaFormat>
-            <formatAnnotations />
+            <formatAnnotations/>
           </java>
           <pom>
             <!-- These are the defaults, you can override if you want -->
@@ -334,7 +323,7 @@
               <sortDependencyManagement>none</sortDependencyManagement>
               <!-- Sort dependency management: https://github.com/Ekryd/sortpom/wiki/SortDependencies -->
 
-              <sortDependencyExclusions />
+              <sortDependencyExclusions/>
               <!-- Sort dependency exclusions: https://github.com/Ekryd/sortpom/wiki/SortDependencies -->
 
               <sortProperties>true</sortProperties>
@@ -382,19 +371,6 @@
             <goals>
               <goal>jar</goal>
             </goals>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>net.nicoulaj.maven.plugins</groupId>
-        <artifactId>checksum-maven-plugin</artifactId>
-        <version>1.11</version>
-        <executions>
-          <execution>
-            <goals>
-              <goal>artifacts</goal>
-            </goals>
-            <phase>package</phase>
           </execution>
         </executions>
       </plugin>

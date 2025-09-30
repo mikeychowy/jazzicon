@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration debug="true" scan="false">
+  <appender class="ch.qos.logback.core.ConsoleAppender" name="STDOUT">
+    <encoder>
+      <pattern>%cyan([%d{yyyy-MM-dd HH:mm:ss.SSS}]) %highlight([%thread]) %magenta(%-5level) %green(%logger{36}:%L) -
+        %msg%blue(%replace( requestId=%X{requestId}){' requestId=$', ''}) %n
+      </pattern>
+    </encoder>
+  </appender>
+
+  <root level="DEBUG|INFO|WARN|ERROR">
+    <appender-ref ref="STDOUT"/>
+  </root>
+</configuration>

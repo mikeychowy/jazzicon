@@ -386,6 +386,15 @@ class JazzIconTest {
         assertThat(harrySvg.get()).isNotBlank();
         assertThat(lindaSvg.get()).isNotBlank();
         assertThat(harrySvg.get()).isNotEqualToIgnoringCase(lindaSvg.get());
+
+        AtomicReference<String> harrySvg2 = new AtomicReference<>();
+        t1 = CompletableFuture.runAsync(() -> harrySvg.set(jazzIcon.generateIcon("Harry")), executor);
+        t2 = CompletableFuture.runAsync(() -> harrySvg2.set(jazzIcon.generateIcon("Harry")), executor);
+        CompletableFuture.allOf(t1, t2).join();
+
+        assertThat(harrySvg.get()).isNotBlank();
+        assertThat(harrySvg2.get()).isNotBlank();
+        assertThat(harrySvg.get()).isEqualTo(harrySvg2.get());
     }
 
     @Test
