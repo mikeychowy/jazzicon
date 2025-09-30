@@ -17,7 +17,7 @@ from [Uparix's Jazzicon](https://github.com/uparix/JazzIcon) as well.
 
 ### Requirements
 
-- Java 21+
+- Java 17+
 - A build system, either Maven or Gradle
 
 ### Maven
